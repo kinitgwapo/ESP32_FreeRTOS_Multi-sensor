@@ -5,6 +5,14 @@
 const char *SERIALMONITOR_TAG = "MAIN APP";
 const TickType_t delay = 500 / portTICK_PERIOD_MS;
 
+void taskA() {
+    ESP_LOGI(SERIALMONITOR_TAG, "Task A Running");
+}
+
+void taskB() {
+    ESP_LOGI(SERIALMONITOR_TAG, "Task B Running");
+}
+
 void app_main() {
     ESP_LOGI(SERIALMONITOR_TAG, "\nBCA152 FreeRTOS Multi-sensor\nSystem Starting...");
 
@@ -12,7 +20,6 @@ void app_main() {
         vTaskDelay(delay);
     }
 }
-
 
 /* Note:
     Blocking (RTOS type of Blocking)
