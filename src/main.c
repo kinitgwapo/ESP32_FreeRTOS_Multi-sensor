@@ -3,7 +3,7 @@
 #include <esp_log.h>
 
 const char *SERIALMONITOR_TAG = "MAIN APP"; // ESP_LOG Tagname
-const TickType_t delay = 1000 / portTICK_PERIOD_MS; // Converting 1000ms to ticks (Used by vTaskDelay; Note: There is a shortcut conversion)
+const TickType_t delay = 1000 / portTICK_PERIOD_MS; // Converting 1000ms to ticks (Used by vTaskDelay; vTaskDelay(pdMS_TO_TICKS(ms)) is a shortcut)
 
 /*
     Tasks handled by FreeRTOS must have its own loop, else the task would run just once.
