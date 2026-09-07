@@ -21,4 +21,5 @@ A Real-Time Multi-sensor Room Monitoring System Project that utilizes the ESP-ID
 | Task B     | Running     | Executing             |                      |
 | Task B     | Blocked     | Waiting for 1s        |                      |
 | Task A     | Ready       | Waiting for Scheduler |                      |
+
 The execution frequency for each task is 1hz, or 1 task per second.
