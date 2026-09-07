@@ -2,7 +2,30 @@
   "version": 1,
   "author": "Kenneth O. Restauro",
   "editor": "wokwi",
-  "parts": [ { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 19.2, "left": 52.84, "attrs": {} } ],
-  "connections": [ [ "esp:TX", "$serialMonitor:RX", "", [] ], [ "esp:RX", "$serialMonitor:TX", "", [] ] ],
+  "parts": [
+    { "type": "wokwi-breadboard-mini", "id": "bb1", "top": 104.2, "left": 285.6, "attrs": {} },
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 19.2, "left": 52.84, "attrs": {} },
+    { "type": "wokwi-dht22", "id": "dht1", "top": -172.5, "left": 282.6, "attrs": {} },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": -63.25,
+      "left": 230.4,
+      "attrs": { "value": "1000" }
+    }
+  ],
+  "connections": [
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "dht1:VCC", "bb1:1t.a", "red", [ "v0" ] ],
+    [ "dht1:GND", "bb1:17t.a", "black", [ "v0", "h124.8" ] ],
+    [ "bb1:1t.e", "bb1:1b.f", "red", [ "v0" ] ],
+    [ "bb1:17t.e", "bb1:17b.f", "black", [ "v0" ] ],
+    [ "esp:GND.2", "bb1:17t.a", "black", [ "v0", "h297.6" ] ],
+    [ "dht1:VCC", "r1:2", "red", [ "v0" ] ],
+    [ "r1:1", "dht1:SDA", "green", [ "v28.8", "h76.8" ] ],
+    [ "esp:23", "dht1:SDA", "green", [ "h163.2" ] ],
+    [ "esp:3V3", "bb1:1b.j", "red", [ "h-28.65", "v201.6", "h268.8", "v-9.6" ] ]
+  ],
   "dependencies": {}
 }
