@@ -2,7 +2,7 @@
 A Real-Time Multi-sensor Room Monitoring System Project that utilizes the ESP-IDF and ESP-IDF FreeRTOS
 
 
-# Note: (Format: https://www.w3schools.com/tools/tool_markdown_table.php)
+# Note: #### (Format: https://www.w3schools.com/tools/tool_markdown_table.php)
 ## Dummy Task's FreeRTOS Configuration
 | Task Name | FreeRTOS (Delay) | Priority # |
 | :-------- | :--------------: | ---------: |
