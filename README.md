@@ -3,7 +3,7 @@ A Real-Time Multi-sensor Room Monitoring System Project that utilizes the ESP-ID
 
 
 # Note:
-#### (Format: https://www.w3schools.com/tools/tool_markdown_table.php)
+#### (Format: https://www.w3schools.com/tools/tool_markdown_table.php & https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables)
 ## Dummy Task's FreeRTOS Configuration
 | Task Name | FreeRTOS (Delay) | Priority # |
 | :-------- | :--------------: | ---------: |
