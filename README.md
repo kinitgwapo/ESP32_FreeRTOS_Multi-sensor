@@ -24,5 +24,8 @@ A Real-Time Multi-sensor Room Monitoring System Project that utilizes the ESP-ID
 The execution frequency for each task is 1hz, or 1 task per second.
 
 # References
-DHT22: https://components101.com/sites/default/files/component_datasheet/DHT22%20Sensor%20Datasheet.pdf & https://components101.com/sensors/dht22-pinout-specs-datasheet
+DHT22 Hardware Design: https://components101.com/sites/default/files/component_datasheet/DHT22%20Sensor%20Datasheet.pdf & https://components101.com/sensors/dht22-pinout-specs-datasheet
+
+DHT22 Wokwi Library: https://github.com/beegee-tokyo/DHTesp
+
 Markdown Format: https://www.w3schools.com/tools/tool_markdown_table.php & https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables

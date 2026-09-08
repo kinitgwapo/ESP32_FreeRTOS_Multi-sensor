@@ -85,7 +85,7 @@ esp_err_t dht22_start(float *temp, float *humid) {
     // First Phase (Send start signal for DHT22)
     gpio_set_level(pin_num, 1);
     gpio_set_level(pin_num, 0);
-    vTaskDelay(pdMS_TO_TICKS(18)); // 18ms
+    vTaskDelay(pdMS_TO_TICKS(18)); // 18ms Delay
     gpio_set_level(pin_num, 1);
     esp_rom_delay_us(40); // 40µs wait for DHT22 to response a start signal
 
