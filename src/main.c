@@ -36,27 +36,29 @@ void taskB(void *pvParameters) {
     }
 }
 
-void taskC(void *pvParameters) {
-    dhtPin_Setup(1ULL << GPIO_NUM_23);
+void dht22_ldr_Task(void *pvParameters) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t frequency = pdMS_TO_TICKS(2000);
 
-    // DHT22 Data
+    // DHT22 START
+    dhtPin_Setup(1ULL << GPIO_NUM_23);
     float temperature = 0.0f;
     float humidity = 0.0f;
+    // DHT22 END
+
+    // LDR START
+    extern adc_oneshot_unit_handle_t ldrHandle;
+    // LDR END
 
     while(true) {
+        // DHT22 START
         esp_err_t DHT22 = dht22_start(&temperature, &humidity);
         if(DHT22 == ESP_OK) {
             ESP_LOGI(SERIALMONITOR_TAG, "Temp: %.1f°C, Humidity: %.1f%%", temperature, humidity);
         }
+        // DHT22 END
 
-        vTaskDelay(pdMS_TO_TICKS(2000));
-    }
-}
-
-void taskD(void *pvParameters) {
-    extern adc_oneshot_unit_handle_t ldrHandle;
-
-    while(true) {
+        // LDR START
         int raw_value = 0;
         esp_err_t LDR = adc_oneshot_read(ldrHandle, ADC_CHANNEL_0, &raw_value);
 
@@ -73,7 +75,9 @@ void taskD(void *pvParameters) {
             int percentage = ((raw_dark - raw_value) * 100) / (raw_dark - raw_bright);
             ESP_LOGI(SERIALMONITOR_TAG, "LDR Percentage: %d%% (Raw: %d)", percentage, raw_value);
         }
-        vTaskDelay(pdMS_TO_TICKS(2000));
+        // LDR END
+
+        vTaskDelayUntil(&xLastWakeTime, frequency);
     }
 }
 
@@ -87,8 +91,7 @@ void app_main() {
     // Configuration for handling tasks through FreeRTOS (FreeRTOS uses a pre-emptive scheduling on default)
     xTaskCreate(taskA, "Task A", 2048, NULL, 1, NULL);
     xTaskCreate(taskB, "Task B", 2048, NULL, 1, NULL);
-    xTaskCreate(taskC, "Task C", 2048, NULL, 1, NULL);
-    xTaskCreate(taskD, "Task D", 2048, NULL, 1, NULL);
+    xTaskCreate(dht22_ldr_Task, "SensorTask", 3072, NULL, 1, NULL); // Upped stack depth for safety
 
     while(true) { // Free to use with FreeRTOS (Just avoid using delay that halts the CPU/Core/s)
         vTaskDelay(pdMS_TO_TICKS(1000));
