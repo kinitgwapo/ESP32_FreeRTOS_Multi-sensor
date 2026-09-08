@@ -60,7 +60,7 @@ void app_main() {
     // Configuration for handling tasks through FreeRTOS (FreeRTOS uses a pre-emptive scheduling on default)
     xTaskCreate(taskA, "Task A", 2048, NULL, 1, NULL);
     xTaskCreate(taskB, "Task B", 2048, NULL, 1, NULL);
-    xTaskCreate(taskC, "Task C", 2048, NULL, 2, NULL); // Higher task to avoid getting Empty Value Data
+    xTaskCreate(taskC, "Task C", 2048, NULL, 1, NULL); // Higher task to avoid getting Empty Value Data
 
     while(true) { // Free to use with FreeRTOS (Just avoid using delay that halts the CPU/Core/s)
         vTaskDelay(pdMS_TO_TICKS(1000));

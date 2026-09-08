@@ -4,14 +4,18 @@ static gpio_config_t DHT22_Pin;
 static uint8_t pin_num;
 static uint8_t timeout;
 
-static esp_err_t receive_DHT22_Signal(float *temp, float *humid) {
+// IRAM_ATTR puts function in Internal RAM (Instruction RAM) to avoid cache misses, aiding the critical section
+static esp_err_t IRAM_ATTR receive_DHT22_Signal(float *temp, float *humid) {
     uint8_t data[5] = {0};
+    portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED; // Declaration of Spinlock 
 
+    portENTER_CRITICAL(&mux); // Disables core local interrupts
     for(int i = 0; i < 40; i++) { // Iterate 40 times for 40-bits of data
         timeout = 0;
         while(gpio_get_level(pin_num) == 0) {
             esp_rom_delay_us(1);
             if(++timeout > 50) {
+                portEXIT_CRITICAL(&mux); // Enables local interrupts
                 return ESP_ERR_FLASH_BASE;
             }
         }
@@ -20,6 +24,7 @@ static esp_err_t receive_DHT22_Signal(float *temp, float *humid) {
         while(gpio_get_level(pin_num) != 0) {
             esp_rom_delay_us(1);
             if(++high_duration > 70) {
+                portEXIT_CRITICAL(&mux); // Enables local interrupts
                 return ESP_ERR_INVALID_STATE;
             }
         }
@@ -29,6 +34,7 @@ static esp_err_t receive_DHT22_Signal(float *temp, float *humid) {
             data[i / 8] |= (1 << (7 - (i % 8)));
         }
     }
+    portEXIT_CRITICAL(&mux); // Enables local interrupts
 
     // Checksum for data
     if((uint8_t)(data[0] + data[1] + data[2] + data[3]) != data[4]) {
