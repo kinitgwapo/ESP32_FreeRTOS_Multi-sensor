@@ -4,10 +4,10 @@
 
 #include <myDHT22_Setup.h>
 
+#include <myLDRModule_Setup.h>
+
 const char *SERIALMONITOR_TAG = "MAIN APP"; // ESP_LOG Tagname
 const TickType_t delay = 1000 / portTICK_PERIOD_MS; // Converting 1000ms to ticks (Used by vTaskDelay; vTaskDelay(pdMS_TO_TICKS(ms)) is a shortcut)
-
-
 
 /*
     Tasks handled by FreeRTOS must have its own loop, else the task would run just once.
@@ -53,14 +53,42 @@ void taskC(void *pvParameters) {
     }
 }
 
+void taskD(void *pvParameters) {
+    extern adc_oneshot_unit_handle_t ldrHandle;
+
+    while(true) {
+        int raw_value = 0;
+        esp_err_t LDR = adc_oneshot_read(ldrHandle, ADC_CHANNEL_0, &raw_value);
+
+        if(LDR == ESP_OK) {
+            // Range
+            const int raw_dark = 4063;
+            const int raw_bright = 32;
+
+            // out-of-range Fix
+            if(raw_value > raw_dark) raw_value = raw_dark;
+            if(raw_value < raw_bright) raw_value = raw_bright;
+
+            // Conversion & Inversion
+            int percentage = ((raw_dark - raw_value) * 100) / (raw_dark - raw_bright);
+            ESP_LOGI(SERIALMONITOR_TAG, "LDR Percentage: %d%% (Raw: %d)", percentage, raw_value);
+        }
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
+}
+
 void app_main() {
     ESP_LOGI(SERIALMONITOR_TAG, "\nBCA152 FreeRTOS Multi-sensor\nSystem Starting...");
-    
 
+    // LDR Initial Config
+    ldrmodule_ADC_oneshot_Setup(ADC_UNIT_2, ADC_ULP_MODE_DISABLE);
+    ldrmodule_ADC_oneshot_Channel(ADC_CHANNEL_0);
+    
     // Configuration for handling tasks through FreeRTOS (FreeRTOS uses a pre-emptive scheduling on default)
     xTaskCreate(taskA, "Task A", 2048, NULL, 1, NULL);
     xTaskCreate(taskB, "Task B", 2048, NULL, 1, NULL);
-    xTaskCreate(taskC, "Task C", 2048, NULL, 1, NULL); // Higher task to avoid getting Empty Value Data
+    xTaskCreate(taskC, "Task C", 2048, NULL, 1, NULL);
+    xTaskCreate(taskD, "Task D", 2048, NULL, 1, NULL);
 
     while(true) { // Free to use with FreeRTOS (Just avoid using delay that halts the CPU/Core/s)
         vTaskDelay(pdMS_TO_TICKS(1000));
