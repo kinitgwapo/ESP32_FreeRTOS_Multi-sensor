@@ -103,6 +103,6 @@ esp_err_t dht22_start(float *temp, float *humid) {
 }
 
 void dhtPin_Setup(uint64_t pin_mask) {
-    gpio_init(&DHT22_Pin, pin_mask, GPIO_MODE_INPUT_OUTPUT_OD, GPIO_PULLUP_DISABLE,  GPIO_PULLDOWN_DISABLE, GPIO_INTR_DISABLE);
+    gpio_init(&DHT22_Pin, pin_mask, GPIO_MODE_INPUT_OUTPUT_OD, GPIO_PULLUP_DISABLE, GPIO_PULLDOWN_DISABLE, GPIO_INTR_DISABLE);
     pin_num = __builtin_ffsll(pin_mask) - 1; // Convert bit_mask to GPIO_NUM
 }
