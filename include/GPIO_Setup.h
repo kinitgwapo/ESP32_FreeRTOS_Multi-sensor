@@ -8,7 +8,7 @@
 
 // Function Declarations
 /*
-    Arg "pin_mask" can accept multiple GPIOs
+    Arg "pin_mask" can accept multiple GPIOs, but must be written as [1ULL << (GPIO_NUM_#)] or [(1ULL << GPIO_NUM_#) | (1ULL << GPIO_NUM_#)]
 
     The parameters are based on the "driver/gpio.h" library, please refer to that library if you wish to understand how this function works
 */
