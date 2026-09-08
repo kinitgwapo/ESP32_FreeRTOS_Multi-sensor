@@ -28,4 +28,6 @@ DHT22 Hardware Design: https://components101.com/sites/default/files/component_d
 
 DHT22 Wokwi Library: https://github.com/beegee-tokyo/DHTesp
 
+LDR Module Wokwi: https://docs.wokwi.com/parts/wokwi-photoresistor-sensor
+
 Markdown Format: https://www.w3schools.com/tools/tool_markdown_table.php & https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables
