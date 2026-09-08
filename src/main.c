@@ -2,25 +2,23 @@
 #include <freertos/task.h>
 #include <esp_log.h>
 
+#include <freertos/queue.h>
+
 #include <myDHT22_Setup.h>
 
 #include <myLDRModule_Setup.h>
 
+// For Queueing Data safely
+struct SensorData {
+    float dht22_temp;
+    float dht22_humid;
+    int lightLevel;
+    bool motionDetected;
+};
+QueueHandle_t sensorQueue; // Queue Handle
+
 const char *SERIALMONITOR_TAG = "MAIN APP"; // ESP_LOG Tagname
 const TickType_t delay = 1000 / portTICK_PERIOD_MS; // Converting 1000ms to ticks (Used by vTaskDelay; vTaskDelay(pdMS_TO_TICKS(ms)) is a shortcut)
-
-/*
-    Tasks handled by FreeRTOS must have its own loop, else the task would run just once.
-    Also, add a parameter even if your xTaskCreate param arg is NULL, compiling will
-    throw an error if your task does not have an arg holder.
-
-                                            REFRAIN FROM USING CPU/CORE HALTING TYPE OF DELAY:
-            Blocking (RTOS type of Blocking)                                                    Non-blocking
-    
-    vTaskDelay(delay);                                                              taskYIELD();
-        Pauses and checks other queued tasks                                            Pauses and checks other queued tasks
-        Remains blocked even if there is no other tasks                                 Resumes immediately if no other tasks are found/ready 
-*/
 
 void taskA(void *pvParameters) {
     while(true) {
@@ -39,29 +37,20 @@ void taskB(void *pvParameters) {
 void dht22_ldr_Task(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t frequency = pdMS_TO_TICKS(2000);
-
-    // DHT22 START
-    dhtPin_Setup(1ULL << GPIO_NUM_23);
-    float temperature = 0.0f;
-    float humidity = 0.0f;
-    // DHT22 END
-
-    // LDR START
     extern adc_oneshot_unit_handle_t ldrHandle;
-    // LDR END
+    dhtPin_Setup(1ULL << GPIO_NUM_23);
 
     while(true) {
-        // DHT22 START
+        float temperature = 0.0f;
+        float humidity = 0.0f;
         esp_err_t DHT22 = dht22_start(&temperature, &humidity);
         if(DHT22 == ESP_OK) {
             ESP_LOGI(SERIALMONITOR_TAG, "Temp: %.1f°C, Humidity: %.1f%%", temperature, humidity);
         }
-        // DHT22 END
 
-        // LDR START
         int raw_value = 0;
         esp_err_t LDR = adc_oneshot_read(ldrHandle, ADC_CHANNEL_0, &raw_value);
-
+        int percentage = 0;
         if(LDR == ESP_OK) {
             // Range
             const int raw_dark = 4063;
@@ -72,10 +61,19 @@ void dht22_ldr_Task(void *pvParameters) {
             if(raw_value < raw_bright) raw_value = raw_bright;
 
             // Conversion & Inversion
-            int percentage = ((raw_dark - raw_value) * 100) / (raw_dark - raw_bright);
+            percentage = ((raw_dark - raw_value) * 100) / (raw_dark - raw_bright);
             ESP_LOGI(SERIALMONITOR_TAG, "LDR Percentage: %d%% (Raw: %d)", percentage, raw_value);
         }
-        // LDR END
+
+        // Defensive Packaged queue data reading
+        struct SensorData data;
+        data.dht22_temp = (DHT22 == ESP_OK) ? temperature : 0.0f;
+        data.dht22_humid = (DHT22 == ESP_OK) ? humidity : 0.0f;
+        data.lightLevel = (LDR == ESP_OK) ? percentage : 0;
+        data.motionDetected = false; // Placeholder until PIR is added
+
+        //Send the package data to Queue
+        xQueueSend(sensorQueue, &data, portMAX_DELAY);
 
         vTaskDelayUntil(&xLastWakeTime, frequency);
     }
@@ -83,6 +81,8 @@ void dht22_ldr_Task(void *pvParameters) {
 
 void app_main() {
     ESP_LOGI(SERIALMONITOR_TAG, "\nBCA152 FreeRTOS Multi-sensor\nSystem Starting...");
+
+    sensorQueue = xQueueCreate(5, sizeof(struct SensorData));
 
     // LDR Initial Config
     ldrmodule_ADC_oneshot_Setup(ADC_UNIT_2, ADC_ULP_MODE_DISABLE);
