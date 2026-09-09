@@ -9,12 +9,12 @@
 #include <myLDRModule_Setup.h>
 
 // For Queueing Data safely
-struct SensorData {
+typedef struct {
     float dht22_temp;
     float dht22_humid;
     int lightLevel;
     bool motionDetected;
-};
+} SensorData;
 QueueHandle_t sensorQueue; // Queue Handle
 
 const char *SERIALMONITOR_TAG = "MAIN APP"; // ESP_LOG Tagname
@@ -66,7 +66,7 @@ void dht22_ldr_Task(void *pvParameters) {
         }
 
         // Defensive Packaged queue data reading
-        struct SensorData data;
+        SensorData data;
         data.dht22_temp = (DHT22 == ESP_OK) ? temperature : 0.0f;
         data.dht22_humid = (DHT22 == ESP_OK) ? humidity : 0.0f;
         data.lightLevel = (LDR == ESP_OK) ? percentage : 0;
@@ -82,7 +82,10 @@ void dht22_ldr_Task(void *pvParameters) {
 void app_main() {
     ESP_LOGI(SERIALMONITOR_TAG, "\nBCA152 FreeRTOS Multi-sensor\nSystem Starting...");
 
-    sensorQueue = xQueueCreate(5, sizeof(struct SensorData));
+    sensorQueue = xQueueCreate(5, sizeof(SensorData));
+    if(sensorQueue == NULL) {
+        ESP_LOGE(SERIALMONITOR_TAG, "Failed to create sensorQueue!");
+    }
 
     // LDR Initial Config
     ldrmodule_ADC_oneshot_Setup(ADC_UNIT_2, ADC_ULP_MODE_DISABLE);
