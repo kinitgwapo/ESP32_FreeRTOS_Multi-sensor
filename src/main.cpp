@@ -4,12 +4,16 @@
 
 #include <freertos/queue.h>
 
-#include "myDHT22_Setup.h"
+extern "C" {
+    #include "myDHT22_Setup.h"
 
-#include "myLDRModule_Setup.h"
+    #include "myLDRModule_Setup.h"
 
-#include <ssd1306.h>
-#include "myESP_SSD1306_I2C_Setup.h"
+    #include <ssd1306.h>
+    #include "myESP_SSD1306_I2C_Setup.h"
+}
+
+#include "myROTARYENCODER_Setup.hpp"
 
 // For Queueing Data safely
 typedef struct {
@@ -82,20 +86,34 @@ void dht22_ldr_Task(void *pvParameters) {
     }
 }
 
-void Display_Task(void) {
+void DisplayTask(void *pvParemeters) {
     ssd1306_handle_t displayhandle = myI2C_Config();
     ssd1306_clear(displayhandle);
     ssd1306_draw_text(displayhandle, 0, 0, "SSD1306 I2C", true);
     ssd1306_display(displayhandle);
-    vTaskDelay(pdMS_TO_TICKS(1000));
+    
     ssd1306_draw_text(displayhandle, 0, 32, "HI!", true);
     ssd1306_display(displayhandle);
+
+    while(true) {
+
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
 }
 
-void app_main() {
-    ESP_LOGI(SERIALMONITOR_TAG, "\nBCA152 FreeRTOS Multi-sensor\nSystem Starting...");
+void InputTask(void *pvParameters) {
+    DisplayMode currentEncodeMode;
 
-    Display_Task();
+    while(true) {
+        currentEncodeMode = checkRotaryEncoder();
+
+        ESP_LOGI(SERIALMONITOR_TAG, "Input Display Mode: %d", (int)currentEncodeMode);
+        vTaskDelay(pdMS_TO_TICKS(5));
+    }
+}
+
+extern "C" void app_main() {
+    ESP_LOGI(SERIALMONITOR_TAG, "\nBCA152 FreeRTOS Multi-sensor\nSystem Starting...");
 
     sensorQueue = xQueueCreate(5, sizeof(SensorData));
     if(sensorQueue == NULL) {
@@ -109,7 +127,9 @@ void app_main() {
     // Configuration for handling tasks through FreeRTOS (FreeRTOS uses a pre-emptive scheduling on default)
     xTaskCreate(taskA, "Task A", 2048, NULL, 1, NULL);
     xTaskCreate(taskB, "Task B", 2048, NULL, 1, NULL);
-    xTaskCreate(dht22_ldr_Task, "SensorTask", 3072, NULL, 1, NULL); // Upped stack depth for safety
+    xTaskCreate(dht22_ldr_Task, "Sensor Task", 3072, NULL, 2, NULL); // Upped stack depth for safety
+    xTaskCreate(DisplayTask, "Display Task",4096 , NULL, 1, NULL); //
+    xTaskCreate(InputTask, "Rotary Encoder Task", 2048, NULL, 3, NULL);
 
     while(true) { // Free to use with FreeRTOS (Just avoid using delay that halts the CPU/Core/s)
         vTaskDelay(pdMS_TO_TICKS(1000));
