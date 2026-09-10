@@ -1,19 +1,14 @@
 #include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <esp_log.h>
-
-#include <freertos/queue.h>
-
+#include <freertos/task.h> // FreeRTOS Task Manager
+#include <freertos/queue.h> // FreeRTOS Queue Handle
+#include <esp_log.h> // Logging Functions
+#include "myROTARYENCODER_Setup.hpp" // Poll Rotary input
 extern "C" {
-    #include "myDHT22_Setup.h"
-
-    #include "myLDRModule_Setup.h"
-
-    #include <ssd1306.h>
-    #include "myESP_SSD1306_I2C_Setup.h"
+    #include "myDHT22_Setup.h" // Process DHT22 Data
+    #include "myLDRModule_Setup.h" // Process LDR Data
+    #include <ssd1306.h> // OLED Display Driver
+    #include "myESP_SSD1306_I2C_Setup.h" // OLED Display I2C Automated Driver Setup
 }
-
-#include "myROTARYENCODER_Setup.hpp"
 
 // For Queueing Data safely
 typedef struct {
@@ -25,21 +20,6 @@ typedef struct {
 QueueHandle_t sensorQueue; // Queue Handle
 
 const char *SERIALMONITOR_TAG = "MAIN APP"; // ESP_LOG Tagname
-const TickType_t delay = 1000 / portTICK_PERIOD_MS; // Converting 1000ms to ticks (Used by vTaskDelay; vTaskDelay(pdMS_TO_TICKS(ms)) is a shortcut)
-
-void taskA(void *pvParameters) {
-    while(true) {
-        ESP_LOGI(SERIALMONITOR_TAG, "Task A Running");
-        vTaskDelay(delay);
-    }
-}
-
-void taskB(void *pvParameters) {
-    while(true) {
-        ESP_LOGI(SERIALMONITOR_TAG, "Task B Running");
-        vTaskDelay(delay);
-    }
-}
 
 void dht22_ldr_Task(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -91,12 +71,8 @@ void DisplayTask(void *pvParemeters) {
     ssd1306_clear(displayhandle);
     ssd1306_draw_text(displayhandle, 0, 0, "SSD1306 I2C", true);
     ssd1306_display(displayhandle);
-    
-    ssd1306_draw_text(displayhandle, 0, 32, "HI!", true);
-    ssd1306_display(displayhandle);
 
     while(true) {
-
         vTaskDelay(pdMS_TO_TICKS(5000));
     }
 }
@@ -106,7 +82,6 @@ void InputTask(void *pvParameters) {
 
     while(true) {
         currentEncodeMode = checkRotaryEncoder();
-
         ESP_LOGI(SERIALMONITOR_TAG, "Input Display Mode: %d", (int)currentEncodeMode);
         vTaskDelay(pdMS_TO_TICKS(5));
     }
@@ -114,24 +89,16 @@ void InputTask(void *pvParameters) {
 
 extern "C" void app_main() {
     ESP_LOGI(SERIALMONITOR_TAG, "\nBCA152 FreeRTOS Multi-sensor\nSystem Starting...");
+    if((sensorQueue = xQueueCreate(5, sizeof(SensorData))) == NULL) ESP_LOGE(SERIALMONITOR_TAG, "Failed to create sensorQueue!"); // Create Queue
 
-    sensorQueue = xQueueCreate(5, sizeof(SensorData));
-    if(sensorQueue == NULL) {
-        ESP_LOGE(SERIALMONITOR_TAG, "Failed to create sensorQueue!");
-    }
-
-    // LDR Initial Config
-    ldrmodule_ADC_oneshot_Setup(ADC_UNIT_2, ADC_ULP_MODE_DISABLE);
-    ldrmodule_ADC_oneshot_Channel(ADC_CHANNEL_0);
+    ldrmodule_ADC_oneshot_Setup(ADC_UNIT_2, ADC_ULP_MODE_DISABLE); ldrmodule_ADC_oneshot_Channel(ADC_CHANNEL_0); // LDR Initial Config
     
     // Configuration for handling tasks through FreeRTOS (FreeRTOS uses a pre-emptive scheduling on default)
-    xTaskCreate(taskA, "Task A", 2048, NULL, 1, NULL);
-    xTaskCreate(taskB, "Task B", 2048, NULL, 1, NULL);
     xTaskCreate(dht22_ldr_Task, "Sensor Task", 3072, NULL, 2, NULL); // Upped stack depth for safety
     xTaskCreate(DisplayTask, "Display Task",4096 , NULL, 1, NULL); //
     xTaskCreate(InputTask, "Rotary Encoder Task", 2048, NULL, 3, NULL);
 
     while(true) { // Free to use with FreeRTOS (Just avoid using delay that halts the CPU/Core/s)
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
