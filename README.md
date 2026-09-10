@@ -24,13 +24,9 @@ A Real-Time Multi-sensor Room Monitoring System Project that utilizes the ESP-ID
 The execution frequency for each task is 1hz, or 1 task per second.
 
 ### vTaskDelay() & vTaskDelayUntil() Difference
-When vTaskDelay is executed, the current task is blocked for a specific time, allowing other task to work.
-Once the specific time is reached, the task becomes ready and is queued to the scheduler awaiting for signal.
+When vTaskDelay is executed, the current task is blocked for a specific time, allowing other task to work. Once the specific time is reached, the task becomes ready and is queued to the scheduler awaiting for signal.
 
-vTaskDelayUntil has the same principle as vTaskDelay, but with the precedented absolute tick/time interval.
-If your task finishes after 5ms and starts every 100ms, instead of waiting for 100ms + 5ms because it finished quickly,
-vTaskDelayUntil sleeps the task for 95ms from the absolute starting tick and time it took to finish the task,
-removing the drift problem unlike vTaskDelay.
+vTaskDelayUntil has the same principle as vTaskDelay, but with the precedented absolute tick/time interval. If your task finishes after 5ms and starts every 100ms, instead of waiting for 100ms + 5ms because it finished quickly, vTaskDelayUntil sleeps the task for 95ms from the absolute starting tick and time it took to finish the task, removing the drift problem unlike vTaskDelay.
 
 # References
 DHT22 Hardware Design: https://components101.com/sites/default/files/component_datasheet/DHT22%20Sensor%20Datasheet.pdf & https://components101.com/sensors/dht22-pinout-specs-datasheet
