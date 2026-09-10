@@ -4,9 +4,12 @@
 
 #include <freertos/queue.h>
 
-#include <myDHT22_Setup.h>
+#include "myDHT22_Setup.h"
 
-#include <myLDRModule_Setup.h>
+#include "myLDRModule_Setup.h"
+
+#include <ssd1306.h>
+#include "myESP_SSD1306_I2C_Setup.h"
 
 // For Queueing Data safely
 typedef struct {
@@ -79,8 +82,20 @@ void dht22_ldr_Task(void *pvParameters) {
     }
 }
 
+void Display_Task(void) {
+    ssd1306_handle_t displayhandle = myI2C_Config();
+    ssd1306_clear(displayhandle);
+    ssd1306_draw_text(displayhandle, 0, 0, "SSD1306 I2C", true);
+    ssd1306_display(displayhandle);
+    vTaskDelay(pdMS_TO_TICKS(1000));
+    ssd1306_draw_text(displayhandle, 0, 32, "HI!", true);
+    ssd1306_display(displayhandle);
+}
+
 void app_main() {
     ESP_LOGI(SERIALMONITOR_TAG, "\nBCA152 FreeRTOS Multi-sensor\nSystem Starting...");
+
+    Display_Task();
 
     sensorQueue = xQueueCreate(5, sizeof(SensorData));
     if(sensorQueue == NULL) {

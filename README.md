@@ -35,4 +35,6 @@ DHT22 Wokwi Library: https://github.com/beegee-tokyo/DHTesp
 
 LDR Module Wokwi: https://docs.wokwi.com/parts/wokwi-photoresistor-sensor
 
+SSD1306 Display Driver Library: https://github.com/Chill-Sam/esp-ssd1306
+
 Markdown Format: https://www.w3schools.com/tools/tool_markdown_table.php & https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables
