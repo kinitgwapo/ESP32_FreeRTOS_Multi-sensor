@@ -3,11 +3,14 @@
 #include <freertos/queue.h> // FreeRTOS Queue Handle
 #include <esp_log.h> // Logging Functions
 #include "myROTARYENCODER_Setup.hpp" // Poll Rotary input
+#include "myBUZZER_Setup.hpp" // Buzzer Temperature Configuration
+#include <string> // For String Printing
 extern "C" {
     #include "myDHT22_Setup.h" // Process DHT22 Data
     #include "myLDRModule_Setup.h" // Process LDR Data
     #include <ssd1306.h> // OLED Display Driver
     #include "myESP_SSD1306_I2C_Setup.h" // OLED Display I2C Automated Driver Setup
+    #include "myPIR_Setup.h" // Pir pin Setup
 }
 
 // For Queueing Data safely
@@ -21,7 +24,7 @@ QueueHandle_t sensorQueue; // Queue Handle
 
 const char *SERIALMONITOR_TAG = "MAIN APP"; // ESP_LOG Tagname
 
-void dht22_ldr_Task(void *pvParameters) {
+void SensorTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t frequency = pdMS_TO_TICKS(2000);
     extern adc_oneshot_unit_handle_t ldrHandle;
@@ -81,17 +84,44 @@ void InputTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t frequency = pdMS_TO_TICKS(10);
     uint8_t currentEncodeMode;
-    uint8_t prevcurrentEncodeMode = 1;
+    uint8_t prevcurrentEncodeMode = 0;
+    std::string textHolder = "";
 
     while(true) {
-        currentEncodeMode = (int)checkRotaryEncoder();
-
+        currentEncodeMode = (uint8_t)checkRotaryEncoder();
         if(currentEncodeMode != prevcurrentEncodeMode) {
-            ESP_LOGI(SERIALMONITOR_TAG, "Input Display Mode: %d", currentEncodeMode);
+            switch(currentEncodeMode) {
+                case 0: textHolder = "TEMPERATURE"; break;
+                case 1: textHolder = "HUMIDITY"; break;
+                case 2: textHolder = "LIGHT"; break;
+                case 3: textHolder = "MOTION"; break;
+            }
+            ESP_LOGI(SERIALMONITOR_TAG, "Input Display Mode: %s", textHolder.c_str());
             prevcurrentEncodeMode = currentEncodeMode;
         }
 
         vTaskDelayUntil(&xLastWakeTime, frequency);
+    }
+}
+
+void AlarmTask(void *pvParameters) {
+    while(true) {
+        vTaskDelay(pdMS_TO_TICKS(10000));
+    }
+}
+
+void MotionTask(void *pvParameters) {
+    bool status = false;
+    bool prevstatus = false;
+    pirPin_Setup(1ULL << GPIO_NUM_16);
+    while(true) {
+        status = gpio_get_level(GPIO_NUM_16);
+        if(status == true && prevstatus == false) {
+            ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected!");
+        }
+
+        prevstatus = status;
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
@@ -102,9 +132,11 @@ extern "C" void app_main() {
     ldrmodule_ADC_oneshot_Setup(ADC_UNIT_2, ADC_ULP_MODE_DISABLE); ldrmodule_ADC_oneshot_Channel(ADC_CHANNEL_0); // LDR Initial Config
     
     // Configuration for handling tasks through FreeRTOS (FreeRTOS uses a pre-emptive scheduling on default)
-    xTaskCreate(dht22_ldr_Task, "Sensor Task", 3072, NULL, 2, NULL); // Upped stack depth for safety
-    xTaskCreate(DisplayTask, "Display Task",4096 , NULL, 1, NULL); //
-    xTaskCreate(InputTask, "Rotary Encoder Task", 2048, NULL, 3, NULL);
+    xTaskCreate(SensorTask, "DHT22 & LDR", 3072, NULL, 2, NULL); // Upped stack depth for safety
+    xTaskCreate(DisplayTask, "SSD1306 OLED Display",4096 , NULL, 1, NULL); // Upped stack depth for safety
+    xTaskCreate(InputTask, "Rotary Encoder", 2048, NULL, 3, NULL);
+    xTaskCreate(AlarmTask, "Buzzer", 2048, NULL, 2, NULL);
+    xTaskCreate(MotionTask, "PIR", 2048, NULL, 3, NULL);
 
     while(true) { // Free to use with FreeRTOS (Just avoid using delay that halts the CPU/Core/s)
         vTaskDelay(pdMS_TO_TICKS(10000));
