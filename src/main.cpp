@@ -78,12 +78,20 @@ void DisplayTask(void *pvParemeters) {
 }
 
 void InputTask(void *pvParameters) {
-    DisplayMode currentEncodeMode;
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t frequency = pdMS_TO_TICKS(10);
+    uint8_t currentEncodeMode;
+    uint8_t prevcurrentEncodeMode = 1;
 
     while(true) {
-        currentEncodeMode = checkRotaryEncoder();
-        ESP_LOGI(SERIALMONITOR_TAG, "Input Display Mode: %d", (int)currentEncodeMode);
-        vTaskDelay(pdMS_TO_TICKS(5));
+        currentEncodeMode = (int)checkRotaryEncoder();
+
+        if(currentEncodeMode != prevcurrentEncodeMode) {
+            ESP_LOGI(SERIALMONITOR_TAG, "Input Display Mode: %d", currentEncodeMode);
+            prevcurrentEncodeMode = currentEncodeMode;
+        }
+
+        vTaskDelayUntil(&xLastWakeTime, frequency);
     }
 }
 

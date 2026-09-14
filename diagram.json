@@ -34,7 +34,7 @@
       "top": -150.6,
       "left": 577.3,
       "rotate": 90,
-      "attrs": {}
+      "attrs": { "bounce": "0" }
     }
   ],
   "connections": [
