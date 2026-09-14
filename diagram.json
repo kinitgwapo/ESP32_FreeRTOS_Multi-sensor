@@ -35,6 +35,13 @@
       "left": 577.3,
       "rotate": 90,
       "attrs": { "bounce": "0" }
+    },
+    {
+      "type": "wokwi-pir-motion-sensor",
+      "id": "pir2",
+      "top": -149.6,
+      "left": 770.22,
+      "attrs": { "delayTime": "1", "inhibitTime": "0" }
     }
   ],
   "connections": [
@@ -55,7 +62,10 @@
     [ "esp:GND.2", "encoder2:GND", "black", [ "v0", "h470.4" ] ],
     [ "esp:3V3", "encoder2:VCC", "red", [ "h0.15", "v-259.2", "h374.4", "v249.6", "h201.6" ] ],
     [ "esp:19", "encoder2:DT", "green", [ "h489.6" ] ],
-    [ "esp:18", "encoder2:CLK", "green", [ "h508.8", "v-9.6" ] ]
+    [ "esp:18", "encoder2:CLK", "green", [ "h508.8", "v-9.6" ] ],
+    [ "esp:GND.2", "pir2:GND", "black", [ "v0", "h672" ] ],
+    [ "esp:3V3", "pir2:VCC", "red", [ "h0.15", "v-259.2", "h374.4", "v249.6", "h374.4" ] ],
+    [ "esp:16", "pir2:OUT", "green", [ "h652.8" ] ]
   ],
   "dependencies": {}
 }
