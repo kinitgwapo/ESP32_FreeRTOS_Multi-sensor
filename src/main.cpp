@@ -70,13 +70,20 @@ void SensorTask(void *pvParameters) {
 }
 
 void DisplayTask(void *pvParemeters) {
+    SensorData receivedDataforDisplayTask;
     ssd1306_handle_t displayhandle = myI2C_Config();
     ssd1306_clear(displayhandle);
-    ssd1306_draw_text(displayhandle, 0, 0, "SSD1306 I2C", true);
-    ssd1306_display(displayhandle);
+    char temporaryText[7];
 
     while(true) {
-        vTaskDelay(pdMS_TO_TICKS(5000));
+        if(xQueueReceive(sensorQueue, &receivedDataforDisplayTask, portMAX_DELAY) == pdPASS) {
+            ssd1306_clear(displayhandle);
+            ssd1306_draw_text(displayhandle, 0, 0, "SSD1306 I2C", true);
+            snprintf(temporaryText, sizeof(temporaryText), "%.2f", receivedDataforDisplayTask.dht22_temp);
+            ssd1306_draw_text(displayhandle, 0, 32, temporaryText, true);
+            ssd1306_display(displayhandle);
+        }
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
