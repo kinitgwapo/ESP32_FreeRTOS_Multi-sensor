@@ -1,5 +1,6 @@
-#include <myPIR_Setup.h>
+#include <myPIR_Setup.hpp>
 
+SystemState currentSystemState = SystemState::ACTIVE;
 static gpio_config_t PIR_Pin;
 
 void pirPin_Setup(uint64_t pin_mask) {
