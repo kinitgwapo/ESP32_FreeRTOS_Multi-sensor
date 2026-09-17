@@ -40,3 +40,7 @@ DisplayMode checkRotaryEncoder(void) {
     last_clk = clk;
     return currentDisplayMode;
 }
+
+DisplayMode getCurrentDisplayMode(void) {
+    return currentDisplayMode;
+}
