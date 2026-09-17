@@ -17,7 +17,7 @@
     Connect a Capacitor between VDD and Gnd for Actual Hardware to minimize noise. (100 nF non-polarized Capacitor)
     Have the data pin as pull-up resistor, either external or internal setup. (4.7kΩ-10kΩ)
 
-    Data pin must be connected to a Bi-directional GPIO pin because it sends and receives data both from MCU and DHT22.
+    Data pin must be connected to a Bi-directional Open-Drain GPIO pin because it sends and receives data both from MCU and DHT22.
 
     It is a must for calling receive_DHT22_Signal() to enter a critical section and the function is in Internal RAM to
     avoid crashes, cache misses, leading to zero value temp and humid.
