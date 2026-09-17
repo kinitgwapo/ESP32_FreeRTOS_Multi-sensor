@@ -5,6 +5,7 @@
 extern "C" {
     #include <GPIO_Setup.h>
 }
+#include <driver/ledc.h>
 
 enum class AlarmState {
     NORMAL,
