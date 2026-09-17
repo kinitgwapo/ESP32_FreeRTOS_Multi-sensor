@@ -5,12 +5,13 @@
 #include "myROTARYENCODER_Setup.hpp" // Poll Rotary input
 #include "myBUZZER_Setup.hpp" // Buzzer Temperature Configuration
 #include <string> // For String Printing
+#include "myPIR_Setup.hpp" // Pir pin Setup
 extern "C" {
     #include "myDHT22_Setup.h" // Process DHT22 Data
     #include "myLDRModule_Setup.h" // Process LDR Data
     #include <ssd1306.h> // OLED Display Driver
     #include "myESP_SSD1306_I2C_Setup.h" // OLED Display I2C Automated Driver Setup
-    #include "myPIR_Setup.h" // Pir pin Setup
+    
 }
 
 // For Queueing Data safely
@@ -60,7 +61,7 @@ void SensorTask(void *pvParameters) {
         data.dht22_temp = (DHT22 == ESP_OK) ? temperature : 0.0f;
         data.dht22_humid = (DHT22 == ESP_OK) ? humidity : 0.0f;
         data.lightLevel = (LDR == ESP_OK) ? percentage : 0;
-        data.motionDetected = false; // Placeholder until PIR is added
+        data.motionDetected = (currentSystemState == SystemState::ACTIVE); // PIR is now setup correctly
 
         //Send the package data to Queue
         xQueueSend(sensorQueue, &data, portMAX_DELAY);
@@ -77,11 +78,16 @@ void DisplayTask(void *pvParemeters) {
 
     while(true) {
         if(xQueueReceive(sensorQueue, &receivedDataforDisplayTask, portMAX_DELAY) == pdPASS) {
-            ssd1306_clear(displayhandle);
-            ssd1306_draw_text(displayhandle, 0, 0, "SSD1306 I2C", true);
-            snprintf(temporaryText, sizeof(temporaryText), "%.2f", receivedDataforDisplayTask.dht22_temp);
-            ssd1306_draw_text(displayhandle, 0, 32, temporaryText, true);
-            ssd1306_display(displayhandle);
+            if(currentSystemState == SystemState::ACTIVE) {
+                ssd1306_clear(displayhandle);
+                ssd1306_draw_text(displayhandle, 0, 0, "SSD1306 I2C", true);
+                snprintf(temporaryText, sizeof(temporaryText), "%.2f", receivedDataforDisplayTask.dht22_temp);
+                ssd1306_draw_text(displayhandle, 0, 32, temporaryText, true);
+                ssd1306_display(displayhandle);
+            } else {
+                ssd1306_clear(displayhandle);
+                ssd1306_display(displayhandle);
+            }
         }
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
@@ -121,13 +127,31 @@ void MotionTask(void *pvParameters) {
     bool status = false;
     bool prevstatus = false;
     pirPin_Setup(1ULL << GPIO_NUM_16);
+
+    TickType_t lastMotionTick = xTaskGetTickCount();
+    const TickType_t inactivityTimeout = pdMS_TO_TICKS(15000);
+
     while(true) {
         status = gpio_get_level(GPIO_NUM_16);
+
         if(status == true && prevstatus == false) {
-            ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected!");
+            if(currentSystemState == SystemState::INACTIVE) {
+                ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected! State changed: INACTIVE -> ACTIVE");
+                currentSystemState = SystemState::ACTIVE;
+            } else {
+                ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected!");
+            }
+            lastMotionTick = xTaskGetTickCount();
+        }
+        prevstatus = status;
+
+        if(currentSystemState == SystemState::ACTIVE) {
+            if((xTaskGetTickCount() - lastMotionTick) > inactivityTimeout) {
+                currentSystemState = SystemState::INACTIVE;
+                ESP_LOGI(SERIALMONITOR_TAG, "Inactivity timeout (15s) reached! State changed: ACTIVE -> INACTIVE");
+            }
         }
 
-        prevstatus = status;
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
