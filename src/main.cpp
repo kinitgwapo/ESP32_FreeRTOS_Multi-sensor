@@ -139,12 +139,13 @@ void InputTask(void *pvParameters) {
 }
 
 void AlarmTask(void *pvParameters) {
+    SensorData receivedDataforAlarmTask = {0.0f, 0.0f, 0, false};
     buzzerPin_Setup(1ULL << GPIO_NUM_17);
+
     while(true) {
-        gpio_set_level(GPIO_NUM_17, 1);
-        vTaskDelay(pdMS_TO_TICKS(10));
-        gpio_set_level(GPIO_NUM_17, 0);
-        vTaskDelay(pdMS_TO_TICKS(10));
+        if(xQueueReceive(sensorQueue, &receivedDataforAlarmTask, portMAX_DELAY) == pdPASS) {
+        }
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
