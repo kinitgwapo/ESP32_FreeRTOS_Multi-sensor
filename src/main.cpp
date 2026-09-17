@@ -5,13 +5,12 @@
 #include "myROTARYENCODER_Setup.hpp" // Poll Rotary input
 #include "myBUZZER_Setup.hpp" // Buzzer Temperature Configuration
 #include <string> // For String Printing
-#include "myPIR_Setup.hpp" // Pir pin Setup
 extern "C" {
     #include "myDHT22_Setup.h" // Process DHT22 Data
     #include "myLDRModule_Setup.h" // Process LDR Data
     #include <ssd1306.h> // OLED Display Driver
     #include "myESP_SSD1306_I2C_Setup.h" // OLED Display I2C Automated Driver Setup
-    
+    #include "myPIR_Setup.h" // Pir pin Setup
 }
 
 // For Queueing Data safely
@@ -24,6 +23,10 @@ typedef struct {
 QueueHandle_t sensorQueue; // Queue Handle
 
 const char *SERIALMONITOR_TAG = "MAIN APP"; // ESP_LOG Tagname
+EventGroupHandle_t systemEventGroup = NULL;
+#define EVENT_ACTIVE BIT0
+#define EVENT_MOTION BIT1
+#define EVENT_ALARM BIT2
 
 void SensorTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -61,7 +64,7 @@ void SensorTask(void *pvParameters) {
         data.dht22_temp = (DHT22 == ESP_OK) ? temperature : 0.0f;
         data.dht22_humid = (DHT22 == ESP_OK) ? humidity : 0.0f;
         data.lightLevel = (LDR == ESP_OK) ? percentage : 0;
-        data.motionDetected = (currentSystemState == SystemState::ACTIVE); // PIR is now setup correctly
+        data.motionDetected = (xEventGroupGetBits(systemEventGroup) & EVENT_ACTIVE); // PIR is now setup correctly
 
         //Send the package data to Queue
         xQueueSend(sensorQueue, &data, portMAX_DELAY);
@@ -78,7 +81,7 @@ void DisplayTask(void *pvParemeters) {
 
     while(true) {
         if(xQueueReceive(sensorQueue, &receivedDataforDisplayTask, portMAX_DELAY) == pdPASS) {
-            if(currentSystemState == SystemState::ACTIVE) {
+            if(xEventGroupGetBits(systemEventGroup) & EVENT_ACTIVE) {
                 ssd1306_clear(displayhandle);
                 ssd1306_draw_text(displayhandle, 0, 0, "SSD1306 I2C", true);
                 snprintf(temporaryText, sizeof(temporaryText), "%.2f", receivedDataforDisplayTask.dht22_temp);
@@ -135,19 +138,22 @@ void MotionTask(void *pvParameters) {
         status = gpio_get_level(GPIO_NUM_16);
 
         if(status == true && prevstatus == false) {
-            if(currentSystemState == SystemState::INACTIVE) {
+            if(!(xEventGroupGetBits(systemEventGroup) & EVENT_ACTIVE)) {
                 ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected! State changed: INACTIVE -> ACTIVE");
-                currentSystemState = SystemState::ACTIVE;
+                xEventGroupSetBits(systemEventGroup, EVENT_ACTIVE | EVENT_MOTION);
             } else {
                 ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected!");
+                xEventGroupSetBits(systemEventGroup, EVENT_MOTION);
             }
             lastMotionTick = xTaskGetTickCount();
+        } else {
+            xEventGroupClearBits(systemEventGroup, EVENT_MOTION);
         }
         prevstatus = status;
 
-        if(currentSystemState == SystemState::ACTIVE) {
+        if(xEventGroupGetBits(systemEventGroup) & EVENT_ACTIVE) {
             if((xTaskGetTickCount() - lastMotionTick) > inactivityTimeout) {
-                currentSystemState = SystemState::INACTIVE;
+                xEventGroupClearBits(systemEventGroup, EVENT_ACTIVE);
                 ESP_LOGI(SERIALMONITOR_TAG, "Inactivity timeout (15s) reached! State changed: ACTIVE -> INACTIVE");
             }
         }
@@ -161,6 +167,13 @@ extern "C" void app_main() {
     if((sensorQueue = xQueueCreate(5, sizeof(SensorData))) == NULL) ESP_LOGE(SERIALMONITOR_TAG, "Failed to create sensorQueue!"); // Create Queue
 
     ldrmodule_ADC_oneshot_Setup(ADC_UNIT_2, ADC_ULP_MODE_DISABLE); ldrmodule_ADC_oneshot_Channel(ADC_CHANNEL_0); // LDR Initial Config
+
+    systemEventGroup =  xEventGroupCreate();
+    if(systemEventGroup == NULL) {
+        ESP_LOGE(SERIALMONITOR_TAG, "Failed to create system event group!");
+        return;
+    }
+    xEventGroupSetBits(systemEventGroup, EVENT_ACTIVE); // Initial System State
     
     // Configuration for handling tasks through FreeRTOS (FreeRTOS uses a pre-emptive scheduling on default)
     xTaskCreate(SensorTask, "DHT22 & LDR", 3072, NULL, 2, NULL); // Upped stack depth for safety
