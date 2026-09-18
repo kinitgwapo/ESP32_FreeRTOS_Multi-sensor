@@ -20,7 +20,10 @@ typedef struct {
     int lightLevel;
     bool motionDetected;
 } SensorData;
-QueueHandle_t sensorQueue; // Queue Handle
+QueueHandle_t sensorQueue; // SensorData Queue Handle
+QueueHandle_t inputQueue; // InputTask Queue Handle
+QueueHandle_t alarmQueue; // Alarm Queue Handle
+QueueSetHandle_t displayQueueSet; // Queue Handle for SensorData and InputTask
 
 const char *SERIALMONITOR_TAG = "MAIN APP"; // ESP_LOG Tagname
 EventGroupHandle_t systemEventGroup = NULL;
@@ -68,24 +71,30 @@ void SensorTask(void *pvParameters) {
 
         //Send the package data to Queue
         xQueueSend(sensorQueue, &data, portMAX_DELAY);
+        xQueueSend(alarmQueue, &data, portMAX_DELAY);
 
         vTaskDelayUntil(&xLastWakeTime, frequency);
     }
 }
 
-void DisplayTask(void *pvParemeters) {
+void DisplayTask(void *pvParameters) {
     SensorData receivedDataforDisplayTask = {0.0f, 0.0f, 0, false};
+    uint8_t currentMode = 0;
+
     ssd1306_handle_t displayhandle = myI2C_Config();
     char temporaryText[16];
 
     while(true) {
-        xQueueReceive(sensorQueue, &receivedDataforDisplayTask, 0);
+        QueueSetMemberHandle_t activeMember = xQueueSelectFromSet(displayQueueSet, portMAX_DELAY);
+
+        if(activeMember == sensorQueue) xQueueReceive(sensorQueue, &receivedDataforDisplayTask, 0);
+        if(activeMember == inputQueue) xQueueReceive(inputQueue, &currentMode, 0);
 
         if(xEventGroupGetBits(systemEventGroup) & EVENT_ACTIVE) {
             ssd1306_clear(displayhandle);
             ssd1306_draw_text(displayhandle, 0, 0, "ROOM MONITOR", true);
 
-            switch(getCurrentDisplayMode()) {
+            switch((DisplayMode)currentMode) {
                 case DisplayMode::TEMPERATURE:
                     ssd1306_draw_text(displayhandle, 0, 20, "TEMPERATURE", true);
                     snprintf(temporaryText, sizeof(temporaryText), "%.1f C", receivedDataforDisplayTask.dht22_temp);
@@ -109,28 +118,22 @@ void DisplayTask(void *pvParemeters) {
             ssd1306_clear(displayhandle);
             ssd1306_display(displayhandle);
         }
-        vTaskDelay(pdMS_TO_TICKS(200));
     }
 }
 
 void InputTask(void *pvParameters) {
     rotaryEncoder_GPIO_Setup();
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t frequency = pdMS_TO_TICKS(10);
     uint8_t currentEncodeMode;
     uint8_t prevcurrentEncodeMode = 0;
-    std::string textHolder = "";
+
+    TickType_t xLastWakeTime = xTaskGetTickCount();
+    const TickType_t frequency = pdMS_TO_TICKS(10);
 
     while(true) {
         currentEncodeMode = (uint8_t)checkRotaryEncoder();
         if(currentEncodeMode != prevcurrentEncodeMode) {
-            switch(currentEncodeMode) {
-                case 0: textHolder = "TEMPERATURE"; break;
-                case 1: textHolder = "HUMIDITY"; break;
-                case 2: textHolder = "LIGHT"; break;
-                case 3: textHolder = "MOTION"; break;
-            }
-            ESP_LOGI(SERIALMONITOR_TAG, "Input Display Mode: %s", textHolder.c_str());
+            xQueueSend(inputQueue, &currentEncodeMode, 0);
+            ESP_LOGI(SERIALMONITOR_TAG, "Input Produced Mode: %d", currentEncodeMode);
             prevcurrentEncodeMode = currentEncodeMode;
         }
 
@@ -143,9 +146,20 @@ void AlarmTask(void *pvParameters) {
     buzzerPin_Setup(1ULL << GPIO_NUM_17);
 
     while(true) {
-        if(xQueueReceive(sensorQueue, &receivedDataforAlarmTask, portMAX_DELAY) == pdPASS) {
+        if(xQueueReceive(alarmQueue, &receivedDataforAlarmTask, portMAX_DELAY) == pdPASS) {
+            AlarmState currentResult = evaluateTemperature(receivedDataforAlarmTask.dht22_temp);
+            switch(currentResult) {
+                case AlarmState::NORMAL:
+                    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
+                    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+                    break;
+                case AlarmState::LOW_TEMPERATURE:
+                case AlarmState::HIGH_TEMPERATURE:
+                    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 127);
+                    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+                    break;
+            }
         }
-        vTaskDelay(pdMS_TO_TICKS(1000));
     }
 }
 
@@ -191,7 +205,13 @@ void MotionTask(void *pvParameters) {
 
 extern "C" void app_main() {
     ESP_LOGI(SERIALMONITOR_TAG, "\nBCA152 FreeRTOS Multi-sensor\nSystem Starting...");
-    if((sensorQueue = xQueueCreate(5, sizeof(SensorData))) == NULL) ESP_LOGE(SERIALMONITOR_TAG, "Failed to create sensorQueue!"); // Create Queue
+    if((sensorQueue = xQueueCreate(5, sizeof(SensorData))) == NULL) ESP_LOGE(SERIALMONITOR_TAG, "Failed to create sensorQueue!"); // Create sensorQueue
+    if((inputQueue = xQueueCreate(5, sizeof(uint8_t))) == NULL) ESP_LOGE(SERIALMONITOR_TAG, "Failed to create InputTask Queue!"); // Create InputTask Queue
+    if((alarmQueue = xQueueCreate(5, sizeof(SensorData))) == NULL) ESP_LOGE(SERIALMONITOR_TAG, "Failed to create alarmQueue!"); // Create alarmQueue
+
+    displayQueueSet = xQueueCreateSet(5 + 5);
+    xQueueAddToSet(sensorQueue, displayQueueSet);
+    xQueueAddToSet(inputQueue, displayQueueSet);
 
     ldrmodule_ADC_oneshot_Setup(ADC_UNIT_2, ADC_ULP_MODE_DISABLE); ldrmodule_ADC_oneshot_Channel(ADC_CHANNEL_0); // LDR Initial Config
 
@@ -203,11 +223,11 @@ extern "C" void app_main() {
     xEventGroupSetBits(systemEventGroup, EVENT_ACTIVE); // Initial System State
     
     // Configuration for handling tasks through FreeRTOS (FreeRTOS uses a pre-emptive scheduling on default)
-    //xTaskCreate(SensorTask, "DHT22 & LDR", 3072, NULL, 2, NULL); // Upped stack depth for safety
-    //xTaskCreate(DisplayTask, "SSD1306 OLED Display",4096 , NULL, 1, NULL); // Upped stack depth for safety
-    //xTaskCreate(InputTask, "Rotary Encoder", 2048, NULL, 3, NULL);
+    xTaskCreate(SensorTask, "DHT22 & LDR", 3072, NULL, 2, NULL); // Upped stack depth for safety
+    xTaskCreate(DisplayTask, "SSD1306 OLED Display",4096 , NULL, 1, NULL); // Upped stack depth for safety
+    xTaskCreate(InputTask, "Rotary Encoder", 2048, NULL, 3, NULL);
     xTaskCreate(AlarmTask, "Buzzer", 2048, NULL, 2, NULL);
-    //xTaskCreate(MotionTask, "PIR", 2048, NULL, 3, NULL);
+    xTaskCreate(MotionTask, "PIR", 2048, NULL, 3, NULL);
 
     while(true) { // Free to use with FreeRTOS (Just avoid using delay that halts the CPU/Core/s)
         vTaskDelay(pdMS_TO_TICKS(10000));
