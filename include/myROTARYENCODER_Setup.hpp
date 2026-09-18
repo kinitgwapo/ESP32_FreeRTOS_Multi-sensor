@@ -21,6 +21,5 @@ enum class DisplayMode {
 // Function Declarations
 void rotaryEncoder_GPIO_Setup(void);
 DisplayMode checkRotaryEncoder(void);
-DisplayMode getCurrentDisplayMode(void);
 
 #endif
