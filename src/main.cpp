@@ -25,6 +25,8 @@ QueueHandle_t inputQueue; // InputTask Queue Handle
 QueueHandle_t alarmQueue; // Alarm Queue Handle
 QueueSetHandle_t displayQueueSet; // Queue Handle for SensorData and InputTask
 
+SemaphoreHandle_t serialMutex = NULL;
+
 const char *SERIALMONITOR_TAG = "MAIN APP"; // ESP_LOG Tagname
 EventGroupHandle_t systemEventGroup = NULL;
 #define EVENT_ACTIVE BIT0
@@ -42,7 +44,10 @@ void SensorTask(void *pvParameters) {
         float humidity = 0.0f;
         esp_err_t DHT22 = dht22_start(&temperature, &humidity);
         if(DHT22 == ESP_OK) {
-            ESP_LOGI(SERIALMONITOR_TAG, "Temp: %.1f°C, Humidity: %.1f%%", temperature, humidity);
+            if(xSemaphoreTake(serialMutex, portMAX_DELAY) == pdPASS) {
+                ESP_LOGI(SERIALMONITOR_TAG, "Temp: %.1f°C, Humidity: %.1f%%", temperature, humidity);
+                xSemaphoreGive(serialMutex);
+            }     
         }
 
         int raw_value = 0;
@@ -59,7 +64,10 @@ void SensorTask(void *pvParameters) {
 
             // Conversion & Inversion
             percentage = ((raw_dark - raw_value) * 100) / (raw_dark - raw_bright);
-            ESP_LOGI(SERIALMONITOR_TAG, "LDR Percentage: %d%% (Raw: %d)", percentage, raw_value);
+            if(xSemaphoreTake(serialMutex, portMAX_DELAY) == pdPASS) {
+                ESP_LOGI(SERIALMONITOR_TAG, "LDR Percentage: %d%% (Raw: %d)", percentage, raw_value);
+                xSemaphoreGive(serialMutex);
+            }
         }
 
         // Defensive Packaged queue data reading
@@ -133,7 +141,10 @@ void InputTask(void *pvParameters) {
         currentEncodeMode = (uint8_t)checkRotaryEncoder();
         if(currentEncodeMode != prevcurrentEncodeMode) {
             xQueueSend(inputQueue, &currentEncodeMode, 0);
-            ESP_LOGI(SERIALMONITOR_TAG, "Input Produced Mode: %d", currentEncodeMode);
+            if(xSemaphoreTake(serialMutex, portMAX_DELAY)) {
+                ESP_LOGI(SERIALMONITOR_TAG, "Input Produced Mode: %d", currentEncodeMode);
+                xSemaphoreGive(serialMutex);
+            }
             prevcurrentEncodeMode = currentEncodeMode;
         }
 
@@ -176,10 +187,16 @@ void MotionTask(void *pvParameters) {
 
         if(status == true && prevstatus == false) {
             if(!(xEventGroupGetBits(systemEventGroup) & EVENT_ACTIVE)) {
-                ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected! State changed: INACTIVE -> ACTIVE");
+                if(xSemaphoreTake(serialMutex, portMAX_DELAY)) {
+                    ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected! State changed: INACTIVE -> ACTIVE");
+                    xSemaphoreGive(serialMutex);
+                }
                 xEventGroupSetBits(systemEventGroup, EVENT_ACTIVE);
             } else {
-                ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected!");
+                if(xSemaphoreTake(serialMutex, portMAX_DELAY)) {
+                    ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected!");
+                    xSemaphoreGive(serialMutex);
+                }
             }
         }
 
@@ -195,7 +212,10 @@ void MotionTask(void *pvParameters) {
         if(xEventGroupGetBits(systemEventGroup) & EVENT_ACTIVE) {
             if((xTaskGetTickCount() - lastMotionTick) > inactivityTimeout) {
                 xEventGroupClearBits(systemEventGroup, EVENT_ACTIVE);
-                ESP_LOGI(SERIALMONITOR_TAG, "Inactivity timeout (15s) reached! State changed: ACTIVE -> INACTIVE");
+                if(xSemaphoreTake(serialMutex, portMAX_DELAY)) {
+                    ESP_LOGI(SERIALMONITOR_TAG, "Inactivity timeout (15s) reached! State changed: ACTIVE -> INACTIVE");
+                    xSemaphoreGive(serialMutex);
+                }
             }
         }
 
@@ -221,7 +241,12 @@ extern "C" void app_main() {
         return;
     }
     xEventGroupSetBits(systemEventGroup, EVENT_ACTIVE); // Initial System State
-    
+
+    serialMutex = xSemaphoreCreateMutex();
+    if(serialMutex == NULL) {
+        ESP_LOGE(SERIALMONITOR_TAG, "Failed to create serial mutex!");
+    }
+
     // Configuration for handling tasks through FreeRTOS (FreeRTOS uses a pre-emptive scheduling on default)
     xTaskCreate(SensorTask, "DHT22 & LDR", 3072, NULL, 2, NULL); // Upped stack depth for safety
     xTaskCreate(DisplayTask, "SSD1306 OLED Display",4096 , NULL, 1, NULL); // Upped stack depth for safety
