@@ -36,7 +36,6 @@ EventGroupHandle_t systemEventGroup = NULL;
 void SensorTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     const TickType_t frequency = pdMS_TO_TICKS(2000);
-    extern adc_oneshot_unit_handle_t ldrHandle;
     dhtPin_Setup(1ULL << GPIO_NUM_23);
 
     while(true) {
@@ -51,19 +50,10 @@ void SensorTask(void *pvParameters) {
         }
 
         int raw_value = 0;
-        esp_err_t LDR = adc_oneshot_read(ldrHandle, ADC_CHANNEL_0, &raw_value);
         int percentage = 0;
+        esp_err_t LDR = ldrmodule_read_percentage(&percentage, &raw_value);
         if(LDR == ESP_OK) {
             // Range
-            const int raw_dark = 4063;
-            const int raw_bright = 32;
-
-            // out-of-range Fix
-            if(raw_value > raw_dark) raw_value = raw_dark;
-            if(raw_value < raw_bright) raw_value = raw_bright;
-
-            // Conversion & Inversion
-            percentage = ((raw_dark - raw_value) * 100) / (raw_dark - raw_bright);
             if(xSemaphoreTake(serialMutex, portMAX_DELAY) == pdPASS) {
                 ESP_LOGI(SERIALMONITOR_TAG, "LDR Percentage: %d%% (Raw: %d)", percentage, raw_value);
                 xSemaphoreGive(serialMutex);

@@ -25,4 +25,7 @@
 esp_err_t ldrmodule_ADC_oneshot_Setup(adc_unit_t adc_unit, adc_ulp_mode_t ulp_mode);
 esp_err_t ldrmodule_ADC_oneshot_Channel(adc_channel_t channel);
 
+// Encapsulated read function (Moved from main.cpp SensorTask)
+esp_err_t ldrmodule_read_percentage(int *percentage, int *raw_value_out);
+
 #endif
