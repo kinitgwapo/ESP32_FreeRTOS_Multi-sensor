@@ -1,7 +1,4 @@
 #include "myRTOS_Logic.h"
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h> // FreeRTOS Task Manager
-#include <freertos/queue.h> // FreeRTOS Queue Handle
 #include <esp_log.h> // Logging Functions
 #include "myROTARYENCODER_Setup.hpp" // Poll Rotary input
 #include "myBUZZER_Setup.hpp" // Buzzer Temperature Configuration
@@ -206,7 +203,7 @@ extern "C" void app_main() {
     rtos_sync_init();
     rtos_queues_init();
     rtos_tasks_init();
-    
+
     while(true) { // Free to use with FreeRTOS (Just avoid using delay that halts the CPU/Core/s)
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
