@@ -3,6 +3,8 @@
 
 static const char *RTOS_TAG = "RTOS_SETUP";
 
+
+
 // --- Global Handle Definitions ---
 QueueHandle_t sensorQueue = NULL;
 QueueHandle_t inputQueue = NULL;
@@ -12,8 +14,9 @@ QueueSetHandle_t displayQueueSet = NULL;
 SemaphoreHandle_t serialMutex = NULL;
 EventGroupHandle_t systemEventGroup = NULL;
 
-// --- Initialization Functions ---
 
+
+// --- Initialization Functions ---
 void rtos_sync_init(void) {
     systemEventGroup = xEventGroupCreate();
     if(systemEventGroup == NULL) {
@@ -50,4 +53,23 @@ void rtos_tasks_init(void) {
     xTaskCreate(InputTask, "Rotary Encoder", 2048, NULL, 3, NULL);
     xTaskCreate(AlarmTask, "Buzzer", 2048, NULL, 2, NULL);
     xTaskCreate(MotionTask, "PIR", 2048, NULL, 3, NULL);
+}
+
+
+
+// --- Queue Interaction Functions ---
+void rtos_send_sensor_data(esp_err_t dht_status, float temp, float humid, esp_err_t ldr_status, int lightLevel) {
+    SensorData data;
+    
+    // Apply fallback values if sensors failed directly during assignment
+    data.dht22_temp = (dht_status == ESP_OK) ? temp : 0.0f;
+    data.dht22_humid = (dht_status == ESP_OK) ? humid : 0.0f;
+    data.lightLevel = (ldr_status == ESP_OK) ? lightLevel : 0;
+    
+    // Automatically grab the latest motion state from the event group
+    data.motionDetected = (xEventGroupGetBits(systemEventGroup) & EVENT_MOTION) ? true : false;
+
+    // Dispatch to both queues
+    xQueueSend(sensorQueue, &data, portMAX_DELAY);
+    xQueueSend(alarmQueue, &data, portMAX_DELAY);
 }

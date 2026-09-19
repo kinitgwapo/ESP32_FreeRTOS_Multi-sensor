@@ -15,7 +15,6 @@ const char *SERIALMONITOR_TAG = "MAIN APP"; // ESP_LOG Tagname
 
 void SensorTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t frequency = pdMS_TO_TICKS(2000);
     dhtPin_Setup(1ULL << GPIO_NUM_23);
 
     while(true) {
@@ -40,18 +39,10 @@ void SensorTask(void *pvParameters) {
             }
         }
 
-        // Defensive Packaged queue data reading
-        SensorData data;
-        data.dht22_temp = (DHT22 == ESP_OK) ? temperature : 0.0f;
-        data.dht22_humid = (DHT22 == ESP_OK) ? humidity : 0.0f;
-        data.lightLevel = (LDR == ESP_OK) ? percentage : 0;
-        data.motionDetected = (xEventGroupGetBits(systemEventGroup) & EVENT_MOTION); // PIR is now setup correctly
+        // Send everything through the single RTOS interface
+        rtos_send_sensor_data(DHT22, temperature, humidity, LDR, percentage);
 
-        //Send the package data to Queue
-        xQueueSend(sensorQueue, &data, portMAX_DELAY);
-        xQueueSend(alarmQueue, &data, portMAX_DELAY);
-
-        vTaskDelayUntil(&xLastWakeTime, frequency);
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(2000));
     }
 }
 

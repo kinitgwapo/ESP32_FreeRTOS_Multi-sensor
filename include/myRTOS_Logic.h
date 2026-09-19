@@ -7,6 +7,8 @@
 #include <freertos/event_groups.h>
 #include <freertos/semphr.h>
 
+#include <esp_err.h> // Required for esp_err_t
+
 // --- System Data Structures ---
 typedef struct {
     float dht22_temp;
@@ -39,5 +41,8 @@ void DisplayTask(void *pvParameters);
 void InputTask(void *pvParameters);
 void AlarmTask(void *pvParameters);
 void MotionTask(void *pvParameters);
+
+// --- Queue Interaction Functions ---
+void rtos_send_sensor_data(esp_err_t dht_status, float temp, float humid, esp_err_t ldr_status, int lightLevel);
 
 #endif // RTOS_OBJECTS_H
