@@ -1,13 +1,12 @@
 #include "myRTOS_Logic.h"
-#include <esp_log.h> // Logging Functions
 #include "myROTARYENCODER_Setup.hpp" // Poll Rotary input
 #include "myBUZZER_Setup.hpp" // Buzzer Temperature Configuration
+#include "myESP_SSD1306_I2C_Setup.h" // OLED Display I2C Automated Driver Setup
 #include <string> // For String Printing
 extern "C" {
     #include "myDHT22_Setup.h" // Process DHT22 Data
     #include "myLDRModule_Setup.h" // Process LDR Data
     #include <ssd1306.h> // OLED Display Driver
-    #include "myESP_SSD1306_I2C_Setup.h" // OLED Display I2C Automated Driver Setup
     #include "myPIR_Setup.h" // Pir pin Setup
 }
 
@@ -49,9 +48,7 @@ void SensorTask(void *pvParameters) {
 void DisplayTask(void *pvParameters) {
     SensorData receivedDataforDisplayTask = {0.0f, 0.0f, 0, false};
     uint8_t currentMode = 0;
-
-    ssd1306_handle_t displayhandle = myI2C_Config();
-    char temporaryText[16];
+    myI2C_Config();
 
     while(true) {
         QueueSetMemberHandle_t activeMember = xQueueSelectFromSet(displayQueueSet, portMAX_DELAY);
@@ -59,44 +56,18 @@ void DisplayTask(void *pvParameters) {
         if(activeMember == sensorQueue) xQueueReceive(sensorQueue, &receivedDataforDisplayTask, 0);
         if(activeMember == inputQueue) xQueueReceive(inputQueue, &currentMode, 0);
 
-        if(xEventGroupGetBits(systemEventGroup) & EVENT_ACTIVE) {
-            ssd1306_clear(displayhandle);
-            ssd1306_draw_text(displayhandle, 0, 0, "ROOM MONITOR", true);
+        bool isActive = (xEventGroupGetBits(systemEventGroup) & EVENT_ACTIVE) != 0;
 
-            switch((DisplayMode)currentMode) {
-                case DisplayMode::TEMPERATURE:
-                    ssd1306_draw_text(displayhandle, 0, 20, "TEMPERATURE", true);
-                    snprintf(temporaryText, sizeof(temporaryText), "%.1f C", receivedDataforDisplayTask.dht22_temp);
-                    break;
-                case DisplayMode::HUMIDITY:
-                    ssd1306_draw_text(displayhandle, 0, 20, "HUMIDITY", true);
-                    snprintf(temporaryText, sizeof(temporaryText), "%.1f RH", receivedDataforDisplayTask.dht22_humid);     
-                    break;
-                case DisplayMode::LIGHT:
-                    ssd1306_draw_text(displayhandle, 0, 20, "LIGHT", true);
-                    snprintf(temporaryText, sizeof(temporaryText), "%d", receivedDataforDisplayTask.lightLevel);
-                    break;
-                case DisplayMode::MOTION:
-                    ssd1306_draw_text(displayhandle, 0, 20, "MOTION", true);
-                    snprintf(temporaryText, sizeof(temporaryText), "%s", receivedDataforDisplayTask.motionDetected ? "DETECTED" : "CLEAR");
-                    break;
-            }
-            ssd1306_draw_text(displayhandle, 0, 32, temporaryText, true);
-            ssd1306_display(displayhandle);
-        } else {
-            ssd1306_clear(displayhandle);
-            ssd1306_display(displayhandle);
-        }
+        // Hand off everything to the hardware module function
+        display_update_screen(&receivedDataforDisplayTask, currentMode, isActive);
     }
 }
 
 void InputTask(void *pvParameters) {
+    TickType_t xLastWakeTime = xTaskGetTickCount();
     rotaryEncoder_GPIO_Setup();
     uint8_t currentEncodeMode;
     uint8_t prevcurrentEncodeMode = 0;
-
-    TickType_t xLastWakeTime = xTaskGetTickCount();
-    const TickType_t frequency = pdMS_TO_TICKS(10);
 
     while(true) {
         currentEncodeMode = (uint8_t)checkRotaryEncoder();
@@ -109,7 +80,7 @@ void InputTask(void *pvParameters) {
             prevcurrentEncodeMode = currentEncodeMode;
         }
 
-        vTaskDelayUntil(&xLastWakeTime, frequency);
+        vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10));
     }
 }
 
