@@ -1,3 +1,4 @@
+#include "myRTOS_Logic.h"
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h> // FreeRTOS Task Manager
 #include <freertos/queue.h> // FreeRTOS Queue Handle
@@ -13,25 +14,7 @@ extern "C" {
     #include "myPIR_Setup.h" // Pir pin Setup
 }
 
-// For Queueing Data safely
-typedef struct {
-    float dht22_temp;
-    float dht22_humid;
-    int lightLevel;
-    bool motionDetected;
-} SensorData;
-QueueHandle_t sensorQueue; // SensorData Queue Handle
-QueueHandle_t inputQueue; // InputTask Queue Handle
-QueueHandle_t alarmQueue; // Alarm Queue Handle
-QueueSetHandle_t displayQueueSet; // Queue Handle for SensorData and InputTask
-
-SemaphoreHandle_t serialMutex = NULL;
-
 const char *SERIALMONITOR_TAG = "MAIN APP"; // ESP_LOG Tagname
-EventGroupHandle_t systemEventGroup = NULL;
-#define EVENT_ACTIVE BIT0
-#define EVENT_MOTION BIT1
-#define EVENT_ALARM BIT2
 
 void SensorTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
@@ -215,35 +198,15 @@ void MotionTask(void *pvParameters) {
 
 extern "C" void app_main() {
     ESP_LOGI(SERIALMONITOR_TAG, "\nBCA152 FreeRTOS Multi-sensor\nSystem Starting...");
-    if((sensorQueue = xQueueCreate(5, sizeof(SensorData))) == NULL) ESP_LOGE(SERIALMONITOR_TAG, "Failed to create sensorQueue!"); // Create sensorQueue
-    if((inputQueue = xQueueCreate(5, sizeof(uint8_t))) == NULL) ESP_LOGE(SERIALMONITOR_TAG, "Failed to create InputTask Queue!"); // Create InputTask Queue
-    if((alarmQueue = xQueueCreate(5, sizeof(SensorData))) == NULL) ESP_LOGE(SERIALMONITOR_TAG, "Failed to create alarmQueue!"); // Create alarmQueue
 
-    displayQueueSet = xQueueCreateSet(5 + 5);
-    xQueueAddToSet(sensorQueue, displayQueueSet);
-    xQueueAddToSet(inputQueue, displayQueueSet);
+    // Hardware LDR Initial Config
+    ldrmodule_ADC_oneshot_Setup(ADC_UNIT_2, ADC_ULP_MODE_DISABLE);
+    ldrmodule_ADC_oneshot_Channel(ADC_CHANNEL_0);
 
-    ldrmodule_ADC_oneshot_Setup(ADC_UNIT_2, ADC_ULP_MODE_DISABLE); ldrmodule_ADC_oneshot_Channel(ADC_CHANNEL_0); // LDR Initial Config
-
-    systemEventGroup =  xEventGroupCreate();
-    if(systemEventGroup == NULL) {
-        ESP_LOGE(SERIALMONITOR_TAG, "Failed to create system event group!");
-        return;
-    }
-    xEventGroupSetBits(systemEventGroup, EVENT_ACTIVE); // Initial System State
-
-    serialMutex = xSemaphoreCreateMutex();
-    if(serialMutex == NULL) {
-        ESP_LOGE(SERIALMONITOR_TAG, "Failed to create serial mutex!");
-    }
-
-    // Configuration for handling tasks through FreeRTOS (FreeRTOS uses a pre-emptive scheduling on default)
-    xTaskCreate(SensorTask, "DHT22 & LDR", 3072, NULL, 2, NULL); // Upped stack depth for safety
-    xTaskCreate(DisplayTask, "SSD1306 OLED Display",4096 , NULL, 1, NULL); // Upped stack depth for safety
-    xTaskCreate(InputTask, "Rotary Encoder", 2048, NULL, 3, NULL);
-    xTaskCreate(AlarmTask, "Buzzer", 2048, NULL, 2, NULL);
-    xTaskCreate(MotionTask, "PIR", 2048, NULL, 3, NULL);
-
+    rtos_sync_init();
+    rtos_queues_init();
+    rtos_tasks_init();
+    
     while(true) { // Free to use with FreeRTOS (Just avoid using delay that halts the CPU/Core/s)
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
