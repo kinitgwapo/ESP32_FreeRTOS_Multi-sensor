@@ -6,7 +6,6 @@
 extern "C" {
     #include "myDHT22_Setup.h" // Process DHT22 Data
     #include "myLDRModule_Setup.h" // Process LDR Data
-    #include <ssd1306.h> // OLED Display Driver
     #include "myPIR_Setup.h" // Pir pin Setup
 }
 
