@@ -9,6 +9,7 @@
 extern "C" {
     #include <GPIO_Setup.h>
 }
+#include <esp_attr.h> // IRAM
 
 // Variables
 enum class DisplayMode {

@@ -2,9 +2,29 @@
 
 static DisplayMode currentDisplayMode = DisplayMode::TEMPERATURE;
 static gpio_config_t gpio_handle;
+volatile static bool encoder_changed = false;
+volatile static int encoder_direction = 0; // 1 = CW, -1 =CCW
+
+// ISR Handler for Led & Buzzer Controller
+static void IRAM_ATTR my_ISR(void *arg) {
+    // Only CLK triggers this. We just check what DT is doing right now.
+    int dt_level = !gpio_get_level(DT_PIN);
+    
+    if (dt_level == 1) {
+        encoder_direction = 1;   // Clockwise
+    } else {
+        encoder_direction = -1;  // Counter-clockwise
+    }
+    encoder_changed = true;
+}
 
 void rotaryEncoder_GPIO_Setup(void) {
-    gpio_init(&gpio_handle,(1ULL << CLK_PIN) | (1ULL << DT_PIN), GPIO_MODE_INPUT, GPIO_PULLUP_DISABLE, GPIO_PULLDOWN_DISABLE, GPIO_INTR_DISABLE);
+    // Configure CLK with an interrupt, but DT as a normal input with NO interrupt type
+    gpio_init(&gpio_handle, (1ULL << CLK_PIN), GPIO_MODE_INPUT, GPIO_PULLUP_DISABLE, GPIO_PULLDOWN_DISABLE, GPIO_INTR_POSEDGE);
+    gpio_init(&gpio_handle, (1ULL << DT_PIN), GPIO_MODE_INPUT, GPIO_PULLUP_DISABLE, GPIO_PULLDOWN_DISABLE, GPIO_INTR_DISABLE);
+    
+    gpio_install_isr_service(0);
+    gpio_isr_handler_add(CLK_PIN, my_ISR, NULL);
 }
 
 static void clockwise_navigate(void) {
@@ -26,17 +46,15 @@ static void counterclockwise_navigate(void) {
 }
 
 DisplayMode checkRotaryEncoder(void) {
-    static bool last_clk = true;
-    bool clk = gpio_get_level(CLK_PIN), dt = gpio_get_level(DT_PIN);
-
-    if(last_clk && !clk) {
-        if(dt) {
+    if(encoder_changed) {
+        if(encoder_direction > 0) {
             clockwise_navigate();
-        } else {
+        } else if(encoder_direction < 0) {
             counterclockwise_navigate();
         }
+        encoder_changed = false;
+        encoder_direction = 0;
     }
 
-    last_clk = clk;
     return currentDisplayMode;
 }
