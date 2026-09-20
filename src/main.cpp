@@ -85,49 +85,20 @@ void AlarmTask(void *pvParameters) {
 }
 
 void MotionTask(void *pvParameters) {
+    TickType_t lastMotionTick = xTaskGetTickCount();
     bool status = false;
     bool prevstatus = false;
     pirPin_Setup(1ULL << GPIO_NUM_16);
 
-    TickType_t lastMotionTick = xTaskGetTickCount();
-    const TickType_t inactivityTimeout = pdMS_TO_TICKS(15000);
-
     while(true) {
         status = gpio_get_level(GPIO_NUM_16);
 
-        if(status == true && prevstatus == false) {
-            if(!(xEventGroupGetBits(systemEventGroup) & EVENT_ACTIVE)) {
-                if(xSemaphoreTake(serialMutex, portMAX_DELAY)) {
-                    ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected! State changed: INACTIVE -> ACTIVE");
-                    xSemaphoreGive(serialMutex);
-                }
-                xEventGroupSetBits(systemEventGroup, EVENT_ACTIVE);
-            } else {
-                if(xSemaphoreTake(serialMutex, portMAX_DELAY)) {
-                    ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected!");
-                    xSemaphoreGive(serialMutex);
-                }
-            }
-        }
+        pir_InActiveTOActive(&status, &prevstatus);
 
-        if(status == true) {
-            xEventGroupSetBits(systemEventGroup, EVENT_MOTION);
-            lastMotionTick = xTaskGetTickCount();
-        } else {
-            xEventGroupClearBits(systemEventGroup, EVENT_MOTION);
-        }
-
+        pir_Active(&status, &lastMotionTick);
         prevstatus = status;
 
-        if(xEventGroupGetBits(systemEventGroup) & EVENT_ACTIVE) {
-            if((xTaskGetTickCount() - lastMotionTick) > inactivityTimeout) {
-                xEventGroupClearBits(systemEventGroup, EVENT_ACTIVE);
-                if(xSemaphoreTake(serialMutex, portMAX_DELAY)) {
-                    ESP_LOGI(SERIALMONITOR_TAG, "Inactivity timeout (15s) reached! State changed: ACTIVE -> INACTIVE");
-                    xSemaphoreGive(serialMutex);
-                }
-            }
-        }
+        pir_ActiveTOInActive(&lastMotionTick);
 
         vTaskDelay(pdMS_TO_TICKS(100));
     }
