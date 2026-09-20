@@ -41,3 +41,17 @@ AlarmState evaluateTemperature(float temperature) {
     }
     return currentTemperatureMode = AlarmState::NORMAL;
 }
+
+void buzzer_Update(AlarmState currentResult) {
+    switch(currentResult) {
+        case AlarmState::NORMAL:
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+            break;
+        case AlarmState::LOW_TEMPERATURE:
+        case AlarmState::HIGH_TEMPERATURE:
+            ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 127);
+            ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+            break;
+    }
+}

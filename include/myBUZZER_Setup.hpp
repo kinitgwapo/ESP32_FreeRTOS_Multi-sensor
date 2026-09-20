@@ -16,5 +16,6 @@ enum class AlarmState {
 // Function Declarations
 void buzzerPin_Setup(uint64_t pin_mask);
 AlarmState evaluateTemperature(float temperature);
+void buzzer_Update(AlarmState currentResult);
 
 #endif
