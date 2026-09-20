@@ -1,4 +1,3 @@
-#include "myRTOS_Logic.h"
 #include "myROTARYENCODER_Setup.hpp" // Poll Rotary input
 #include "myBUZZER_Setup.hpp" // Buzzer Temperature Configuration
 #include "myESP_SSD1306_I2C_Setup.h" // OLED Display I2C Automated Driver Setup
@@ -65,19 +64,11 @@ void DisplayTask(void *pvParameters) {
 void InputTask(void *pvParameters) {
     TickType_t xLastWakeTime = xTaskGetTickCount();
     rotaryEncoder_GPIO_Setup();
-    uint8_t currentEncodeMode;
     uint8_t prevcurrentEncodeMode = 0;
 
     while(true) {
-        currentEncodeMode = (uint8_t)checkRotaryEncoder();
-        if(currentEncodeMode != prevcurrentEncodeMode) {
-            xQueueSend(inputQueue, &currentEncodeMode, 0);
-            if(xSemaphoreTake(serialMutex, portMAX_DELAY)) {
-                ESP_LOGI(SERIALMONITOR_TAG, "Input Produced Mode: %d", currentEncodeMode);
-                xSemaphoreGive(serialMutex);
-            }
-            prevcurrentEncodeMode = currentEncodeMode;
-        }
+        uint8_t currentEncodeMode = (uint8_t)checkRotaryEncoder();
+        rotaryEncoder_SendData(&currentEncodeMode, &prevcurrentEncodeMode);
 
         vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(10));
     }
@@ -90,17 +81,7 @@ void AlarmTask(void *pvParameters) {
     while(true) {
         if(xQueueReceive(alarmQueue, &receivedDataforAlarmTask, portMAX_DELAY) == pdPASS) {
             AlarmState currentResult = evaluateTemperature(receivedDataforAlarmTask.dht22_temp);
-            switch(currentResult) {
-                case AlarmState::NORMAL:
-                    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 0);
-                    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-                    break;
-                case AlarmState::LOW_TEMPERATURE:
-                case AlarmState::HIGH_TEMPERATURE:
-                    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, 127);
-                    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
-                    break;
-            }
+            buzzer_Update(currentResult);
         }
     }
 }
