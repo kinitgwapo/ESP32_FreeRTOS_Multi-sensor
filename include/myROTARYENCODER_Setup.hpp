@@ -10,6 +10,8 @@ extern "C" {
     #include <GPIO_Setup.h>
 }
 #include <esp_attr.h> // IRAM
+#include "myRTOS_Logic.h"
+#include <esp_log.h>
 
 // Variables
 enum class DisplayMode {
@@ -22,5 +24,6 @@ enum class DisplayMode {
 // Function Declarations
 void rotaryEncoder_GPIO_Setup(void);
 DisplayMode checkRotaryEncoder(void);
+void rotaryEncoder_SendData(uint8_t *currentEncodeMode, uint8_t *prevcurrentEncodeMode);
 
 #endif

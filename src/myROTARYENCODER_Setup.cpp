@@ -4,6 +4,7 @@ static DisplayMode currentDisplayMode = DisplayMode::TEMPERATURE;
 static gpio_config_t gpio_handle;
 volatile static bool encoder_changed = false;
 volatile static int encoder_direction = 0; // 1 = CW, -1 =CCW
+static const char *ROTARY_TAG = "Rotary Encoder";
 
 // ISR Handler for Led & Buzzer Controller
 static void IRAM_ATTR my_ISR(void *arg) {
@@ -57,4 +58,15 @@ DisplayMode checkRotaryEncoder(void) {
     }
 
     return currentDisplayMode;
+}
+
+void rotaryEncoder_SendData(uint8_t *currentEncodeMode, uint8_t *prevcurrentEncodeMode) {
+    if(*currentEncodeMode != *prevcurrentEncodeMode) {
+        xQueueSend(inputQueue, currentEncodeMode, 0);
+        if(xSemaphoreTake(serialMutex, portMAX_DELAY)) {
+            ESP_LOGI(ROTARY_TAG, "Input Produced Mode: %d", *currentEncodeMode);
+            xSemaphoreGive(serialMutex);
+        }
+        *prevcurrentEncodeMode = *currentEncodeMode;
+    }
 }
