@@ -15,8 +15,7 @@ void SensorTask(void *pvParameters) {
     dhtPin_Setup(1ULL << GPIO_NUM_23);
 
     while(true) {
-        float temperature = 0.0f;
-        float humidity = 0.0f;
+        float temperature = 0.0f; float humidity = 0.0f;
         esp_err_t DHT22 = dht22_start(&temperature, &humidity);
         if(DHT22 == ESP_OK) {
             if(xSemaphoreTake(serialMutex, portMAX_DELAY) == pdPASS) {
@@ -25,8 +24,7 @@ void SensorTask(void *pvParameters) {
             }     
         }
 
-        int raw_value = 0;
-        int percentage = 0;
+        int raw_value = 0; int percentage = 0;
         esp_err_t LDR = ldrmodule_read_percentage(&percentage, &raw_value);
         if(LDR == ESP_OK) {
             // Range
