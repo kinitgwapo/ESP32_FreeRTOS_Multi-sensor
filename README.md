@@ -1,7 +1,9 @@
 # ESP32 FreeRTOS Multi-sensor
 A Real-Time Multi-sensor Room Monitoring System Project that utilizes the ESP-IDF and ESP-IDF FreeRTOS
 
-# IN-PROGRESS (Unit Testing Done - Static Code Analysis Pending)
+# IN-PROGRESS
+### Unit Testing - Done (On UT-SCA_Branch Branch)
+### Static Code Analysis - Pending (To be implemented with the UT-SCA_Branch Branch)
 
 # Note:
 ### Dummy Task's FreeRTOS Configuration
