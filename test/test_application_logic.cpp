@@ -1,9 +1,13 @@
 #include <unity.h>
 #include "myBUZZER_Setup.hpp"
 #include "myESP_SSD1306_I2C_Setup.h"
+#include "mySYSTEMSTATE_Logic.h"
 
 void setUp(void) {}
 void tearDown(void) {}
+
+
+
 
 
 // -------------------- Temperature Test START --------------------
@@ -34,6 +38,8 @@ void temp_above_upper_threshold(void) {
     TEST_ASSERT_EQUAL(AlarmState::HIGH_TEMPERATURE, evaluateTemperature(35.0f));
 }
 // -------------------- Temperature Test END --------------------
+
+
 
 
 
@@ -73,9 +79,6 @@ void display_clockwise4(void) {
     TEST_ASSERT_EQUAL_STRING("20.0 C", text);
 }
 // -------------------- Display Test Clockwise END --------------------
-
-
-
 // -------------------- Display Test Counter-Clockwise START --------------------
 // Display Starting Point
 void display_Initial_left(void) {
@@ -109,6 +112,36 @@ void display_counter_clockwise4(void) {
 }
 // -------------------- Display Test Counter-Clockwise END --------------------
 
+
+
+
+
+// -------------------- System State START --------------------
+void system_state_ActiveNoTimeout(void) {
+    bool tempValue = evaluateSystemState(true, false, 0, 15000);
+    TEST_ASSERT_TRUE(tempValue);
+}
+
+void system_state_ActiveTimeout(void) {
+    bool tempValue = evaluateSystemState(true, false, 15001, 15000);
+    TEST_ASSERT_FALSE(tempValue);
+}
+
+void system_state_InactiveNoMotion(void) {
+    bool tempValue = evaluateSystemState(false, false, 15001, 15000);
+    TEST_ASSERT_FALSE(tempValue);
+}
+
+void system_state_InactiveMotion(void) {
+    bool tempValue = evaluateSystemState(false, true, 15001, 15000);
+    TEST_ASSERT_TRUE(tempValue);
+}
+// -------------------- System State END --------------------
+
+
+
+
+
 extern "C" void app_main(void) {
     UNITY_BEGIN();
 
@@ -135,6 +168,14 @@ extern "C" void app_main(void) {
     RUN_TEST(display_counter_clockwise3);
     RUN_TEST(display_counter_clockwise4);
     // --- Display Test Counter-Clockwise END ---
+
+    // --- System State START ---
+    RUN_TEST(system_state_ActiveNoTimeout);
+    RUN_TEST(system_state_ActiveTimeout);
+    RUN_TEST(system_state_InactiveNoMotion);
+    RUN_TEST(system_state_InactiveMotion);
+    // --- System State END ---
+
 
     UNITY_END();
 }
