@@ -1,4 +1,10 @@
 [wokwi]
 version = 1
-firmware = '.pio\build\esp32dev\firmware.bin'
-elf = '.pio\build\esp32dev\firmware.elf'
+
+# --- Standard  Environment for Wokwi ---
+#firmware = '.pio\build\esp32dev\firmware.bin'
+#elf = '.pio\build\esp32dev\firmware.elf'
+
+# --- Unit Testing Environment for Wokwi ---
+firmware = '.pio\build\test_environment\firmware.bin'
+elf = '.pio\build\test_environment\firmware.elf'
