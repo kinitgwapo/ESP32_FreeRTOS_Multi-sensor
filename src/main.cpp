@@ -44,6 +44,7 @@ void SensorTask(void *pvParameters) {
 void DisplayTask(void *pvParameters) {
     SensorData receivedDataforDisplayTask = {0.0f, 0.0f, 0, false};
     uint8_t currentMode = 0;
+    char text[16];
     myI2C_Config();
 
     while(true) {
@@ -55,7 +56,7 @@ void DisplayTask(void *pvParameters) {
         bool isActive = (xEventGroupGetBits(systemEventGroup) & EVENT_ACTIVE) != 0;
 
         // Hand off everything to the hardware module function
-        display_update_screen(&receivedDataforDisplayTask, currentMode, isActive);
+        display_update_screen(&receivedDataforDisplayTask, currentMode, isActive, text, sizeof(text));
     }
 }
 
@@ -104,6 +105,8 @@ void MotionTask(void *pvParameters) {
     }
 }
 
+
+#ifndef PIO_UNIT_TESTING
 extern "C" void app_main() {
     ESP_LOGI(SERIALMONITOR_TAG, "\nBCA152 FreeRTOS Multi-sensor\nSystem Starting...");
 
@@ -119,3 +122,4 @@ extern "C" void app_main() {
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
+#endif
