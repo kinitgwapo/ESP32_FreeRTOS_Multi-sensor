@@ -2,6 +2,7 @@
 #include "myBUZZER_Setup.hpp" // Buzzer Temperature Configuration
 #include "myESP_SSD1306_I2C_Setup.h" // OLED Display I2C Automated Driver Setup
 #include <string> // For String Printing
+#include "mySYSTEMSTATE_Logic.h"
 extern "C" {
     #include "myDHT22_Setup.h" // Process DHT22 Data
     #include "myLDRModule_Setup.h" // Process LDR Data
@@ -19,7 +20,7 @@ void SensorTask(void *pvParameters) {
         esp_err_t DHT22 = dht22_start(&temperature, &humidity);
         if(DHT22 == ESP_OK) {
             if(xSemaphoreTake(serialMutex, portMAX_DELAY) == pdPASS) {
-                ESP_LOGI(SERIALMONITOR_TAG, "Temp: %.1f°C, Humidity: %.1f%%", temperature, humidity);
+                ESP_LOGI(SERIALMONITOR_TAG, "Temp: %.1f C, Humidity: %.1f%%", temperature, humidity);
                 xSemaphoreGive(serialMutex);
             }     
         }
@@ -86,7 +87,6 @@ void AlarmTask(void *pvParameters) {
 }
 
 void MotionTask(void *pvParameters) {
-    TickType_t lastMotionTick = xTaskGetTickCount();
     bool status = false;
     bool prevstatus = false;
     pirPin_Setup(1ULL << GPIO_NUM_16);
@@ -94,17 +94,48 @@ void MotionTask(void *pvParameters) {
     while(true) {
         status = gpio_get_level(GPIO_NUM_16);
 
-        pir_InActiveTOActive(&status, &prevstatus);
-
-        pir_Active(&status, &lastMotionTick);
-        prevstatus = status;
-
-        pir_ActiveTOInActive(&lastMotionTick);
+        pir_evaluateMotion(status, &prevstatus);
 
         vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
+void StateTask(void *pvParameters) {
+    TickType_t xLastWaketime = xTaskGetTickCount();
+    const uint32_t TIMEOUT_MS = 15000;
+
+    while(true) {
+        EventBits_t bits = xEventGroupGetBits(systemEventGroup);
+        bool isActive = (bits & EVENT_ACTIVE) != 0;
+        bool isMotion = (bits & EVENT_MOTION) != 0;
+
+        if (isMotion) {
+            xLastWaketime = xTaskGetTickCount();
+        }
+
+        uint32_t elapsedMs = pdTICKS_TO_MS(xTaskGetTickCount() - xLastWaketime);
+
+        // Call the pure logic function (100% unit-testable)
+        bool nextActiveState = evaluateSystemState(isActive, isMotion, elapsedMs, TIMEOUT_MS);
+
+        // Handle transitions based on the pure logic's decision
+        if (isActive && !nextActiveState) {
+            xEventGroupClearBits(systemEventGroup, EVENT_ACTIVE);
+            if (xSemaphoreTake(serialMutex, portMAX_DELAY)) {
+                ESP_LOGI(SERIALMONITOR_TAG, "Inactivity timeout (15s) reached! State changed: ACTIVE -> INACTIVE");
+                xSemaphoreGive(serialMutex);
+            }
+        } else if (!isActive && nextActiveState) {
+            xEventGroupSetBits(systemEventGroup, EVENT_ACTIVE);
+            if (xSemaphoreTake(serialMutex, portMAX_DELAY)) {
+                ESP_LOGI(SERIALMONITOR_TAG, "Motion Detected! State changed: INACTIVE -> ACTIVE");
+                xSemaphoreGive(serialMutex);
+            }
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(100)); // Evaluate state every 100ms
+    }
+}
 
 #ifndef PIO_UNIT_TESTING
 extern "C" void app_main() {

@@ -46,7 +46,7 @@ void display_update_screen(SensorData *data, uint8_t currentMode, bool isSystemA
                 break;
             case DisplayMode::LIGHT:
                 ssd1306_draw_text(display_handle, 0, 20, "LIGHT", true);
-                snprintf(text, textsize, "%d", data->lightLevel);
+                snprintf(text, textsize, "%d%%", data->lightLevel);
                 break;
             case DisplayMode::MOTION:
                 ssd1306_draw_text(display_handle, 0, 20, "MOTION", true);

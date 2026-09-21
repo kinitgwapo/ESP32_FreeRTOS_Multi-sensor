@@ -41,6 +41,7 @@ void DisplayTask(void *pvParameters);
 void InputTask(void *pvParameters);
 void AlarmTask(void *pvParameters);
 void MotionTask(void *pvParameters);
+void StateTask(void *pvParameters);
 
 // --- Queue Interaction Functions ---
 void rtos_send_sensor_data(esp_err_t dht_status, float temp, float humid, esp_err_t ldr_status, int lightLevel);
