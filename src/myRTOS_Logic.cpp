@@ -46,13 +46,12 @@ void rtos_queues_init(void) {
 }
 
 void rtos_tasks_init(void) {
-    // These functions are declared in rtos_objects.h, but the linker will 
-    // find their actual while(true) loops over in main.cpp
     xTaskCreate(SensorTask, "DHT22 & LDR", 3072, NULL, 2, NULL);
     xTaskCreate(DisplayTask, "SSD1306 OLED Display", 4096, NULL, 1, NULL);
     xTaskCreate(InputTask, "Rotary Encoder", 2048, NULL, 3, NULL);
     xTaskCreate(AlarmTask, "Buzzer", 2048, NULL, 2, NULL);
     xTaskCreate(MotionTask, "PIR", 2048, NULL, 3, NULL);
+    xTaskCreate(StateTask, "Centralized System State", 2048, NULL, 3, NULL);
 }
 
 
