@@ -30,9 +30,7 @@ void myI2C_Config(void) {
     #pragma GCC diagnostic pop
 }
 
-void display_update_screen(SensorData *data, uint8_t currentMode, bool isSystemActive) {
-    char temporaryText[16];
-
+void display_update_screen(SensorData *data, uint8_t currentMode, bool isSystemActive, char *text, size_t textsize) {
     if(isSystemActive) {
         ssd1306_clear(display_handle);
         ssd1306_draw_text(display_handle, 0, 0, "ROOM MONITOR", true);
@@ -40,25 +38,42 @@ void display_update_screen(SensorData *data, uint8_t currentMode, bool isSystemA
         switch((DisplayMode)currentMode) {
             case DisplayMode::TEMPERATURE:
                 ssd1306_draw_text(display_handle, 0, 20, "TEMPERATURE", true);
-                snprintf(temporaryText, sizeof(temporaryText), "%.1f C", data->dht22_temp);
+                snprintf(text, textsize, "%.1f C", data->dht22_temp);
                 break;
             case DisplayMode::HUMIDITY:
                 ssd1306_draw_text(display_handle, 0, 20, "HUMIDITY", true);
-                snprintf(temporaryText, sizeof(temporaryText), "%.1f RH", data->dht22_humid);     
+                snprintf(text, textsize, "%.1f RH", data->dht22_humid);     
                 break;
             case DisplayMode::LIGHT:
                 ssd1306_draw_text(display_handle, 0, 20, "LIGHT", true);
-                snprintf(temporaryText, sizeof(temporaryText), "%d", data->lightLevel);
+                snprintf(text, textsize, "%d", data->lightLevel);
                 break;
             case DisplayMode::MOTION:
                 ssd1306_draw_text(display_handle, 0, 20, "MOTION", true);
-                snprintf(temporaryText, sizeof(temporaryText), "%s", data->motionDetected ? "DETECTED" : "CLEAR");
+                snprintf(text, textsize, "%s", data->motionDetected ? "DETECTED" : "CLEAR");
                 break;
         }
-        ssd1306_draw_text(display_handle, 0, 32, temporaryText, true);
+        ssd1306_draw_text(display_handle, 0, 32, text, true);
         ssd1306_display(display_handle);
     } else {
         ssd1306_clear(display_handle);
         ssd1306_display(display_handle);
+    }
+}
+
+void unittest_display_update_screen(uint8_t currentMode, char *text, size_t textsize) {
+    switch((DisplayMode)currentMode) {
+        case DisplayMode::TEMPERATURE:
+            snprintf(text, textsize, "%.1f C", 20.0f);
+            break;
+        case DisplayMode::HUMIDITY:
+            snprintf(text, textsize, "%.1f RH", 75.0f);     
+            break;
+        case DisplayMode::LIGHT:
+            snprintf(text, textsize, "%d", 500);
+            break;
+        case DisplayMode::MOTION:
+            snprintf(text, textsize, "%s", true ? "DETECTED" : "CLEAR");
+            break;
     }
 }

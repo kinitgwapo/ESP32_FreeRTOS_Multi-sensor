@@ -10,6 +10,7 @@
 
 // Function Declarations
 void myI2C_Config(void);
-void display_update_screen(SensorData *data, uint8_t currentMode, bool isSystemActive);
+void display_update_screen(SensorData *data, uint8_t currentMode, bool isSystemActive, char *text, size_t textsize);
+void unittest_display_update_screen(uint8_t currentMode, char *text, size_t textsize);
 
 #endif
