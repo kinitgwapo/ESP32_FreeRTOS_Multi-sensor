@@ -5,7 +5,7 @@
  */
 
 #pragma once
-#include "ssd1306.h"
+#include "ssd1306/ssd1306.h"
 
 #ifdef __cplusplus
 extern "C" {

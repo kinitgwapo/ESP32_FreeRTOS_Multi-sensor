@@ -6,7 +6,7 @@
 
 #pragma once
 
-#include "ssd1306.h"
+#include "ssd1306/ssd1306.h"
 
 #include <driver/i2c_master.h>
 #include <driver/spi_master.h>
