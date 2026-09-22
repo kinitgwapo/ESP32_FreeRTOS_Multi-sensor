@@ -87,12 +87,11 @@ void AlarmTask(void *pvParameters) {
 }
 
 void MotionTask(void *pvParameters) {
-    bool status = false;
     bool prevstatus = false;
     pirPin_Setup(1ULL << GPIO_NUM_16);
 
     while(true) {
-        status = gpio_get_level(GPIO_NUM_16);
+        bool status = gpio_get_level(GPIO_NUM_16);
 
         pir_evaluateMotion(status, &prevstatus);
 
