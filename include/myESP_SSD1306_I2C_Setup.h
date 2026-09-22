@@ -2,7 +2,7 @@
 #define MYESP_SSD1306_I2C_SETUP_H
 
 // Libraries
-#include <ssd1306.h>
+#include <ssd1306/ssd1306.h>
 #include <driver/i2c_master.h>
 #include "myRTOS_Logic.h" // For SensorData and DisplayMode (if included or forward declared)
 #include "myROTARYENCODER_Setup.hpp" // For DisplayMode enum if needed
