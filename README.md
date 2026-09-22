@@ -59,6 +59,9 @@ If task priority were set improperly, such as an InputTask & MotionTask not havi
 | Unnecessary Variable Scope | src\main.cpp:90 | variable Scope (status)          | Moved to while loop |
 | Assigned Value never used  | src\main.cpp:90 | unread Variable (status = false) | Same as above       |
 
+src\main.cpp:90: [low:style] The scope of the variable 'status' can be reduced. [variableScope]
+src\main.cpp:90: [low:style] Variable 'status' is assigned a value that is never used. [unreadVariable]
+
 # References
 DHT22 Hardware Design: https://components101.com/sites/default/files/component_datasheet/DHT22%20Sensor%20Datasheet.pdf & https://components101.com/sensors/dht22-pinout-specs-datasheet
 
