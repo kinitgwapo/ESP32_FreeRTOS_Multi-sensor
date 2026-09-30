@@ -97,7 +97,31 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 ## Learning Objectives
 
+This Project serves as a practical guide to building clean, reliable ESP32 projects from start to finish. Exploring this codebase demonstrates how to set up your tools, organize multi-tasking code, and catch bugs before flashing physical hardware:
 
+#### Development Tools & Virtual Prototyping
+
+- VSCode & PlatformIO Setup - Manage ESP32 builds, board settings, and libraries inside a clean, modern development workspace.
+
+- Hardware Simulation with Wokwi - Testing and debugging circuit logic virtually in a browser before assembling physical wiring.
+
+#### Smooth Multi-Tasking with FreeRTOS
+
+- FreeRTOS Queues - Passing Sensor readings and dial clicks safely between background tasks so the screen and sensors never freeze or lag.
+
+- Mutexes & Semaphores - Preventing display glitches when multiple tasks share a single resource concurrently, while triggering instant sound alerts across tasks.
+
+#### Smart Code Organization & State Logic
+
+- Centralized State Controller - Handling display screen switches and alert modes with a structured state machine instead of long, messy if-else blocks.
+
+- Clean Folder & Driver Layout - Separating internal code from external driver files inside structured 'src/' and 'include/' folders for easy, reliable builds.
+
+#### Automated Testing & Code Quality
+
+- Unit Testing with Unity - Verifying core project rules automatically using PlatformIO Unit tests, without needing physical sensors connected.
+
+- Static Analysis with Cppcheck - Filtering out background system noise so automated code checks highlight only real bugs and memory issues.
 
 ## System Architecture
 
