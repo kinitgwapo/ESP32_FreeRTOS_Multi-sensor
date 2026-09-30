@@ -97,8 +97,6 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 ## Learning Objectives
 
-This Project serves as a practical guide to building clean, reliable ESP32 projects from start to finish. Exploring this codebase demonstrates how to set up your tools, organize multi-tasking code, and catch bugs before flashing physical hardware:
-
 #### Development Tools & Virtual Prototyping
 
 - VSCode & PlatformIO Setup - Manage ESP32 builds, board settings, and libraries inside a clean, modern development workspace.
