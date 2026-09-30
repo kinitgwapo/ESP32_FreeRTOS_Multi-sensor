@@ -81,7 +81,7 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 ### Sensors & Input Controls
 
-- PIR Motion Sensor
+- PIR Motion Sensor - Detects movement in the surrounding area to track motion status
 
 - DHT22 Sensor - Measures Ambient Temperature and Humidity levels to monitor room environmental conditions.
 
@@ -91,7 +91,7 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 ### Actuators & Output Devices
 
-- SSD1306 OLED Display - Shows the real-time reading of a single sensor feature at a time (such as dedicated views for temperature, humidity, ligh level, motion state).
+- SSD1306 OLED Display - Shows the real-time reading of a single sensor feature at a time (such as dedicated views for temperature, humidity, light level, motion state).
 
 - Piezo Buzzer - Serves as an alarm system, alerting immediately whenever the temperature readings exceed the designated safety limits such as, the temperature is less than or equal to 18°C, or greater than or equal to 30°C.
 
