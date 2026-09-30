@@ -75,7 +75,7 @@ Markdown Format: https://www.w3schools.com/tools/tool_markdown_table.php & https
 
 ## Project Overview
 
-This ESP32 project is a smart monitoring and alert system designed to track motion and environmental conditions in real time. It collects real-time data from motion, temperature, humidity, and light sensors, displaying clear updates on an OLED screen. Users can navigate settings using a rotary dial, while a piezo buzzer provides instant sound alerts whenever the temperature exceeds the given range.
+This ESP32 project is a smart monitoring and alert system designed to track motion and environmental conditions in real time. It collects real-time data from motion, temperature, humidity, and light sensors, displaying clear updates on an OLED screen. Users can navigate settings using a rotary dial, while a piezo buzzer provides instant sound alerts whenever the temperature exceeds the threshold.
 
 ## Features
 
