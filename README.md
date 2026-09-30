@@ -79,7 +79,21 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 ## Features
 
+### Sensors & Input Controls
 
+- PIR Motion Sensor
+
+- DHT22 Sensor - Measures Ambient Temperature and Humidity levels to monitor room environmental conditions.
+
+- LDR Light Module - Read surrounding light intensity to track changes in room brightness.
+
+- Rotary Encoder - Navigates between display screens, allowing users to turn the dial to cycle through individual sensor views.
+
+### Actuators & Output Devices
+
+- SSD1306 OLED Display - Shows the real-time reading of a single sensor feature at a time (such as dedicated views for temperature, humidity, ligh level, motion state).
+
+- Piezo Buzzer - Serves as an alarm system, alerting immediately whenever the temperature readings exceed the designated safety limits such as, the temperature is less than or equal to 18°C, or greater than or equal to 30°C.
 
 ## Learning Objectives
 
