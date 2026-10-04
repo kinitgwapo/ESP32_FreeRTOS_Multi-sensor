@@ -94,7 +94,14 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 ## Task Design
 
-
+| Task Name   | Responsibility/Role                                               | Execution Type    | Execution Period          | FreeRTOS Priority |
+| :---------- | :---------------------------------------------------------------- | :---------------- | :------------------------ | :---------------- |
+| InputTask   | Polls rotary encoder switch/dial inputs for UI navigation         | Periodic Polling  | 10ms                      | 3 (High)          |
+| MotionTask  | Samples PIR sensor for physical motion activity                   | Periodic Polling  | 100ms                     | 3 (High)          |
+| StateTask   | Manages Active/Inactive system state & 15s inactivity timer       | Event-Driven      | 100ms                     | 2 (Medium)        |
+| SensorTask  | Samples DHT22 and LDR photoresistor telemetry                     | Periodic Sampling | 2000ms                    | 2 (Medium)        |
+| AlarmTask   | Evaluates temperature thresholds and triggers Piezo buzzer alerts | Event-Driven      | Data Arrival              | 2 (Medium)        |
+| DisplayTask | Renders telemetry screens and handles screen-off timeout          | Event-Driven      | Data Arrival/State Change | 1 (Low)           |
 
 ## Inter-Task Communication
 
