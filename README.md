@@ -77,7 +77,7 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 ## State Machine
 
-
+<img width="1196" height="658" alt="State Machine" src="https://github.com/user-attachments/assets/5462e85c-784a-4f79-80a6-7d906f2aaf0b" />
 
 ## Repository Structure
 
