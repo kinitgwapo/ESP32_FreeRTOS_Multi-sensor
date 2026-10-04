@@ -230,18 +230,3 @@ vTaskDelayUntil has the same principle as vTaskDelay, but with the precedented a
 Mutex (Mutual Exclusion) is a method that prevents a certain resource from being manipulated at the same time, which causes a problem such as corrupted data, garbled output when the
 program is designed to be running tasks concurrently. The ESP_LOGI function is one of the examples of a ESPLOG API that shares its one resource to multiple tasks. Having
 multiple tasks be able to manipulate the data simultaneously causes a disaster in UART Serial transmission buffer, leaving the Serial Monitor output a garbage or deformed transmitted data. In this project, SensorTask, InputTask, and MotionTask are the competing tasks that uses ESP_LOGI concurrently.
-
-### Task Priorities
-In this Project, there are currently 5 tasks with different purposes.
-
-| Task Identity | DisplayTask | AlarmTask | SensorTask | InputTask | MotionTask |
-| :-----------: | :---------: | :-------: | :--------: | :-------: | :--------: |
-| Task Priority | 1           | 2         | 2          | 3         | 3          |
-
-Each task have their own priority based on how they function. User Input Tasks such as, "InputTask & MotionTask" are set as the highest priority from all tasks because
-they're designed to be running in polling mode, which involves losing some input before the task begins checking once again. Input runs every 10ms, while Motion starts every 100ms.
-
-For the three remaining tasks, "DisplayTask & AlarmTask" acts as a consumer, and "SensorTask" is a producer. The SensorTask fetches data from DHT22 & LDR (Photoresistor) every
-2s, while AlarmTask and DisplayTask only waits for the upcoming items from the FreeRTOS Queue that is provided by the consumer (SensorTask). Although the SensorTask and AlarmTask have the same priority, they do not necessarily become a conflict because both AlarmTask and DisplayTask waits for Queue data and if the SensorTask interrupts for some reason, the data fetched by AlarmTask and DisplayTask will not be affected.
-
-If task priority were set improperly, such as an InputTask & MotionTask not having the same priority, every time the highest priority is ready while the lower priority is currently running, the highest priority task interrupts the lower priority, leaving the lower priority task paused and lose its progress due to data fetch transferring corruption because the task looses a portion of its polling time while the higher one is stable.
