@@ -53,7 +53,25 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 ## Hardware / Simulated Components
 
+### Core Controller
 
+- ESP32 Microcontroller Unit (MCU): 32-bit dual-core microcontroller operating at 240 MHz with integrated Wi-Fi and Bluetooth stacks, handling main application control loop timing, GPIO reading/interrupts, and I2C/SPI bus communications.
+
+### Sensors & Input Modules
+
+- Wokwi PIR Motion Sensor: Passive infrared sensor simulated in Wokwi with a 5-second active high-signal output delay (High pulse) upon detecting motion in its field of view, used to drive system transitions between Active and Inactive states.
+
+- DHT22 (AM2302) Temperature & Humidity Sensor: Digital climate sensor utilizing a single-bus interface to collect environmental telemetry (Temperature range: -40°C to 80°C, Humidity range: 0-100%).
+
+- LDR (Photoresistor) Sensor Module: Wokwi photoresistor element with an integrated built-in series 10kΩ resistor forming a voltage divider, capable of sensing light intensity across a wide dynamic range (0.1-100,000 lux).
+
+- KY-040 Rotary Encoder Module: Incremental quadrature rotary encoder with an integrated tactile push button, providing digital rotation pulses for screen navigation and UI selection.
+
+### Actuators & Output Devices
+
+- SSD1306 OLED Display (128x64, I2C): 0.96-inch monochrome screen operating over the I2C protocol, responsible for displaying active sensor telemetry views and powering off/clearing during the 15-second inactivity timeout.
+
+- Passive Piezoelectric Buzzer: Audio transducer driven via PWM output signals, current-limited by a series 220Ω resistor to trigger immediate audible alerts for high/low temperature safety thresholds.
 
 ## Pin Configuration
 
