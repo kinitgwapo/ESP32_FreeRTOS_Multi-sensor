@@ -135,6 +135,8 @@ LDR Module Wokwi: https://docs.wokwi.com/parts/wokwi-photoresistor-sensor
 
 SSD1306 Display Driver Library: https://github.com/Chill-Sam/esp-ssd1306 & https://docs.wokwi.com/parts/board-ssd1306
 
+PIR Sensor Wokwi: https://docs.wokwi.com/parts/wokwi-pir-motion-sensor
+
 Markdown Format: https://www.w3schools.com/tools/tool_markdown_table.php & https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables
 
 
