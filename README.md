@@ -65,7 +65,7 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 ## Pin Configuration
 
-
+<img width="936" height="955" alt="Pin Configuration" src="https://github.com/user-attachments/assets/d74a2c3e-9c66-4b5c-9e27-d3dbe3daff7d" />
 
 ## Task Design
 
