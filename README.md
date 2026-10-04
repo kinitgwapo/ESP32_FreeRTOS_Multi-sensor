@@ -77,6 +77,21 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 <img width="936" height="955" alt="Pin Configuration" src="https://github.com/user-attachments/assets/d74a2c3e-9c66-4b5c-9e27-d3dbe3daff7d" />
 
+<div align="center">
+
+| Component           | Pin             | Pin Mode                      |
+| :------------------ | :-------------- | :---------------------------- |
+| Buzzer              | Anode -> Pin 17 | PWM Output                    |
+| LDR (Photoresistor) | A0 -> Pin 4     | ADC Input                     |
+| PIR Sensor          | D -> Pin 16     | Normal Input                  |
+| DHT22               | SDA -> Pin 23   | Bi-directional Open-Drain     |
+| Rotary Encoder      | CLK -> Pin 18   | Positive-Edge Interrupt Input |
+| Rotary Encoder      | DT -> Pin 19    | Normal Input                  |
+| SSD1306 OLED        | SDA -> Pin 21   | I2C                           |
+| SSD1306 OLED        | SCL -> Pin 22   | I2C                           |
+
+</div>
+
 ## Task Design
 
 
