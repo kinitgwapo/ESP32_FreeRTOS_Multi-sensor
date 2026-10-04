@@ -98,10 +98,24 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 | :---------- | :---------------------------------------------------------------- | :---------------- | :------------------------ | :---------------- |
 | InputTask   | Polls rotary encoder switch/dial inputs for UI navigation         | Periodic Polling  | 10ms                      | 3 (High)          |
 | MotionTask  | Samples PIR sensor for physical motion activity                   | Periodic Polling  | 100ms                     | 3 (High)          |
-| StateTask   | Manages Active/Inactive system state & 15s inactivity timer       | Event-Driven      | 100ms                     | 2 (Medium)        |
+| StateTask   | Manages Active/Inactive system state & 15s inactivity timer       | Event-Driven      | 100ms                     | 3 (High)          |
 | SensorTask  | Samples DHT22 and LDR photoresistor telemetry                     | Periodic Sampling | 2000ms                    | 2 (Medium)        |
 | AlarmTask   | Evaluates temperature thresholds and triggers Piezo buzzer alerts | Event-Driven      | Data Arrival              | 2 (Medium)        |
 | DisplayTask | Renders telemetry screens and handles screen-off timeout          | Event-Driven      | Data Arrival/State Change | 1 (Low)           |
+
+### Priority Configuration Rationale
+
+In this project, there are 6 dedicated FreeRTOS tasks, each assigned a specific priority based on its execution model and real-time constraints:
+
+- High Priority (Priority 3 - InputTask, MotionTask, StateTask): Tasks handling real-time inputs and core state management run at the highest priority. InputTask (10ms) and MotionTask (100ms) operate in polling mode to prevent missing fast hardware triggers (rotary encoder quadrature pulses or PIR output signals). StateTask (100ms) shares Priority 3 to immediately evaluate movement signals and process the 15-second inactivity timeout without preemption delay.
+
+- Medium Priority (Priority 2 - SensorTask, AlarmTask): SensorTask acts as a Producer, fetching climate and light telemetry from the DHT22 and LDR photoresistor every 2 seconds. AlarmTask acts as a Consumer, waiting for queue items produced by SensorTask to evaluate safety limits (<= 18°C or >= 30°C). Although both tasks share Priority 2, they do not conflict because AlarmTask remains in a blocked state until new queue data arrives.
+
+- Low Priority (Priority - DisplayTask): DisplayTask acts as a visual Consumer. It remains blocked waiting for incoming telemetry or screen update notifications. Rendering graphics to the SSD1306 OLED over I2C is computationally non-critical, so running at Priority 1 ensures display updates never delay time-critical sensor sampling or user inputs.
+
+### Preemption Risk Avoidance
+
+If task priorities were improperly configured (for instance, if InputTask and MotionTask had unequal priorities), a higher-priority task becoming ready would preempt the lower-priority polling task mid-execution. This would stall the lower-priority task, causing dropped inputs or timing drift during signal evaluation.
 
 ## Inter-Task Communication
 
@@ -139,6 +153,7 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 | Assigned Value never used  | src\main.cpp:90 | unread Variable (status = false) | Same as above       |
 
 src\main.cpp:90: [low:style] The scope of the variable 'status' can be reduced. [variableScope]
+
 src\main.cpp:90: [low:style] Variable 'status' is assigned a value that is never used. [unreadVariable]
 
 ## Functional Verification
