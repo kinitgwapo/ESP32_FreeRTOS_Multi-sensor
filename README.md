@@ -55,11 +55,9 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 <img width="1349" height="717" alt="ESP32 Multi-Sensor Room Monitoring System Architecture" src="https://github.com/user-attachments/assets/9bd7f10a-396e-42b9-9834-6288751798be" />
 
-
 ## FreeRTOS Architecture
 
-<img width="1218" height="806" alt="FreeRTOS Architecture" src="https://github.com/user-attachments/assets/98b2fe96-0aed-4e91-9d19-0bcaf328cffb" />
-
+<img width="1390" height="744" alt="FreeRTOS Architecture" src="https://github.com/user-attachments/assets/3b01ae4e-d0f2-403b-a82f-42bbe6415733" />
 
 ## Hardware / Simulated Components
 
