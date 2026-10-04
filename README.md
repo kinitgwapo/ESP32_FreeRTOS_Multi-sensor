@@ -58,6 +58,7 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 ## FreeRTOS Architecture
 
+<img width="1218" height="806" alt="FreeRTOS Architecture" src="https://github.com/user-attachments/assets/98b2fe96-0aed-4e91-9d19-0bcaf328cffb" />
 
 
 ## Hardware / Simulated Components
