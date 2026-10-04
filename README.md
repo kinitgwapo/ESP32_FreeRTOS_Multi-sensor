@@ -101,7 +101,13 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 ## Static Code Analysis
 
+| Finding                    | File/Line       | Cause                            | Resolution          |
+| :------------------------: | :-------------: | :------------------------------: | :-----------------: |
+| Unnecessary Variable Scope | src\main.cpp:90 | variable Scope (status)          | Moved to while loop |
+| Assigned Value never used  | src\main.cpp:90 | unread Variable (status = false) | Same as above       |
 
+src\main.cpp:90: [low:style] The scope of the variable 'status' can be reduced. [variableScope]
+src\main.cpp:90: [low:style] Variable 'status' is assigned a value that is never used. [unreadVariable]
 
 ## Functional Verification
 
@@ -120,6 +126,26 @@ This ESP32 project is a smart monitoring and alert system designed to track moti
 
 
 ## References and Acknowledgments
+
+DHT22 Hardware Design: https://components101.com/sites/default/files/component_datasheet/DHT22%20Sensor%20Datasheet.pdf & https://components101.com/sensors/dht22-pinout-specs-datasheet
+
+DHT22 Wokwi Library: https://github.com/beegee-tokyo/DHTesp
+
+LDR Module Wokwi: https://docs.wokwi.com/parts/wokwi-photoresistor-sensor
+
+SSD1306 Display Driver Library: https://github.com/Chill-Sam/esp-ssd1306 & https://docs.wokwi.com/parts/board-ssd1306
+
+Markdown Format: https://www.w3schools.com/tools/tool_markdown_table.php & https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -170,24 +196,3 @@ For the three remaining tasks, "DisplayTask & AlarmTask" acts as a consumer, and
 2s, while AlarmTask and DisplayTask only waits for the upcoming items from the FreeRTOS Queue that is provided by the consumer (SensorTask). Although the SensorTask and AlarmTask have the same priority, they do not necessarily become a conflict because both AlarmTask and DisplayTask waits for Queue data and if the SensorTask interrupts for some reason, the data fetched by AlarmTask and DisplayTask will not be affected.
 
 If task priority were set improperly, such as an InputTask & MotionTask not having the same priority, every time the highest priority is ready while the lower priority is currently running, the highest priority task interrupts the lower priority, leaving the lower priority task paused and lose its progress due to data fetch transferring corruption because the task looses a portion of its polling time while the higher one is stable.
-
-### Static Code Analysis Table
-
-| Finding                    | File/Line       | Cause                            | Resolution          |
-| :------------------------: | :-------------: | :------------------------------: | :-----------------: |
-| Unnecessary Variable Scope | src\main.cpp:90 | variable Scope (status)          | Moved to while loop |
-| Assigned Value never used  | src\main.cpp:90 | unread Variable (status = false) | Same as above       |
-
-src\main.cpp:90: [low:style] The scope of the variable 'status' can be reduced. [variableScope]
-src\main.cpp:90: [low:style] Variable 'status' is assigned a value that is never used. [unreadVariable]
-
-# References
-DHT22 Hardware Design: https://components101.com/sites/default/files/component_datasheet/DHT22%20Sensor%20Datasheet.pdf & https://components101.com/sensors/dht22-pinout-specs-datasheet
-
-DHT22 Wokwi Library: https://github.com/beegee-tokyo/DHTesp
-
-LDR Module Wokwi: https://docs.wokwi.com/parts/wokwi-photoresistor-sensor
-
-SSD1306 Display Driver Library: https://github.com/Chill-Sam/esp-ssd1306 & https://docs.wokwi.com/parts/board-ssd1306
-
-Markdown Format: https://www.w3schools.com/tools/tool_markdown_table.php & https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet#tables
