@@ -174,7 +174,13 @@ If task priorities were improperly configured (for instance, if InputTask and Mo
 
 ## Inter-Task Communication
 
-
+| Communication Channel | Source (Producer) | Destination (Consumer) | FreeRTOS Object                  | Payload/Signal Structure                       |
+| :-------------------- | :---------------- | :--------------------- | :------------------------------- | :--------------------------------------------- |
+| Motion Signaling      | MotionTask        | StateTask, SensorTask  | Event Group (systemEventGroup)   | Bitmask (EVENT_MOTION)                         |
+| System Power State    | StateTask         | DisplayTask            | Event Group (systemEventGroup)   | Bitmask (EVENT_ACTIVE)                         |
+| UI Event Stream       | InputTask         | DisplayTask            | Queue (inputQueue)               | uint8_t (DisplayMode Enum Index)               |
+| Telemetry Dispatch    | SensorTask        | DisplayTask, AlarmTask | Queues (sensorQueue, alarmQueue) | Struct (SensorData: {float, float, int, bool}) |
+| Thread-safe Logging   | All Tasks         | UART Serial Monitor    | Mutex (serialMutex)              | Blocking Lock                                  |
 
 ## State Machine
 
