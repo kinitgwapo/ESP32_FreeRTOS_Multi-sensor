@@ -228,6 +228,16 @@ If task priorities were improperly configured (for instance, if InputTask and Mo
 
 <img width="1196" height="658" alt="State Machine" src="https://github.com/user-attachments/assets/5462e85c-784a-4f79-80a6-7d906f2aaf0b" />
 
+The system state machine operates on a continuous evaluation loop between two primary states: ACTIVE and INACTIVE. The transitions are strictly governed by motion detection events and a 15-second inactivity timeout.
+
+#### Initial State: The system boots directly into the ACTIVE state.
+#### While ACTIVE:
+  - Motion Detected: If motion is detected, the internal timer resets (currentTime = 0), and the system loops back to remain in the ACTIVE state.
+  - No Motion (Under Timeout): If no motion is detected but the elapsed time is strictly less than 15 seconds (currentTime < Timeout), the system loops back and maintains the ACTIVE state.
+  - No Motion (Timeout Exceeded): If no motion is detected and the elapsed time surpasses the 15-second threshold (Timeout < currentTime), the system transitions into the INACTIVE state.
+#### While INACTIVE:
+  - Motion Detected: The system remains asleep until motion is detected again, which immediately triggers a transition back to the ACTIVE state, resetting the cycle.
+
 ## Repository Structure
 
 
