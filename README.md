@@ -182,6 +182,17 @@ If task priorities were improperly configured (for instance, if InputTask and Mo
 | Telemetry Dispatch    | SensorTask        | DisplayTask, AlarmTask | Queues (sensorQueue, alarmQueue) | Struct (SensorData: {float, float, int, bool}) |
 | Thread-safe Logging   | All Tasks         | UART Serial Monitor    | Mutex (serialMutex)              | Blocking Lock                                  |
 
+### Communication Channel Mechanics
+
+1. System State & Motion Signaling (systemEventGroup)
+    - Mechanism: xEventGroupSetBits() / xEventGroupClearBits() / xEventGroupGetBits()
+    - Interactions:
+      - Motion Tracking: When MotionTask detects physical movement via the PIR sensor, it sets the EVENT_MOTION bit.
+      - State Management: StateTask continuously monitors EVENT_MOTION. If motion is present, it resets its 15-second inactivity timer and ensures EVENT_ACTIVE is set. If the timer expires without motion, it clears the EVENT_ACTIVE bit.
+
+2. Unified Display Handling (displayQueueSet)
+   
+
 ## State Machine
 
 <img width="1196" height="658" alt="State Machine" src="https://github.com/user-attachments/assets/5462e85c-784a-4f79-80a6-7d906f2aaf0b" />
