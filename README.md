@@ -111,11 +111,66 @@ In this project, there are 6 dedicated FreeRTOS tasks, each assigned a specific 
 
 - Medium Priority (Priority 2 - SensorTask, AlarmTask): SensorTask acts as a Producer, fetching climate and light telemetry from the DHT22 and LDR photoresistor every 2 seconds. AlarmTask acts as a Consumer, waiting for queue items produced by SensorTask to evaluate safety limits (<= 18°C or >= 30°C). Although both tasks share Priority 2, they do not conflict because AlarmTask remains in a blocked state until new queue data arrives.
 
-- Low Priority (Priority - DisplayTask): DisplayTask acts as a visual Consumer. It remains blocked waiting for incoming telemetry or screen update notifications. Rendering graphics to the SSD1306 OLED over I2C is computationally non-critical, so running at Priority 1 ensures display updates never delay time-critical sensor sampling or user inputs.
+- Low Priority (Priority 1 - DisplayTask): DisplayTask acts as a visual Consumer. It remains blocked waiting for incoming telemetry or screen update notifications. Rendering graphics to the SSD1306 OLED over I2C is computationally non-critical, so running at Priority 1 ensures display updates never delay time-critical sensor sampling or user inputs.
 
 ### Preemption Risk Avoidance
 
 If task priorities were improperly configured (for instance, if InputTask and MotionTask had unequal priorities), a higher-priority task becoming ready would preempt the lower-priority polling task mid-execution. This would stall the lower-priority task, causing dropped inputs or timing drift during signal evaluation.
+
+### Isolated Task Profiles
+
+1. InputTask
+    - Purpose: Detects user interactions via the KY-040 Rotary Encoder for screen navigation.
+    - Execution Pattern: Continuous polling mode via vTaskDelayUntil() every 10ms.
+    - Internal Logic:
+        1. Wakes up every 10ms.
+        2. Reads digital logic levels of encoder CLK and DT pins through interrupt signal.
+        3. Decodes quadrature signals to detect clockwise or counter-clockwise rotation.
+        4. Updates internal UI navigation index.
+
+2. MotionTask
+    - Purpose: Performs low-level hardware sampling of the PIR motion sensor signal pin
+    - Execution Pattern: Continuous polling mod every 100ms.
+    - Internal Logic:
+        1. Wakes up every 100ms.
+        2. Reads digital input state from the PIR sensor pin.
+        3. Flags physical movement detection (HIGH state).
+
+3. StateTask
+    - Purpose: Serves as the central system state machine, tracking active usage and inactivity timeouts.
+    - Execution Pattern: Periodic logic evaluation tick every 100ms.
+    - Internal Logic:
+        1. Evaluates PIR motion status flags.
+        2. If motion is active: Resets internal inactivity counter to 0s and maintains Active state.
+        3. If motion is idle: Increments internal inactivity counter by 100ms.
+        4. If inactivity counter reaches 15 seconds: Transitions system state to Inactive.
+
+4. SensorTask
+    - Purpose: Handles environmental telemetry acquisition from physical sensors.
+    - Execution Pattern: Periodic sampling every 2000ms (2s).
+    - Internal Logic:
+        1. Wakes up every 2000ms.
+        2. Queries DHT22 digital 1-Wire interface for temperature (°C) and humidity (%).
+        3. Reads ADC analog voltage from LDR for light intensity (lux).
+        4. Packs values into an internal telemetry memory struct.
+
+5. AlarmTask
+    - Purpose: Evaluates safety thresholds and operates the physical Piezo Buzzer hardware alert.
+    - Execution Pattern: Event-driven/Blocked state.
+    - Internal Logic:
+        1. Remains blocked until new telemetry arrives.
+        2. Evaluates temperature readings against bounds (<= 18°C or >= 30°C).
+        3. Drives PWM frequency to trigger Piezo buzzer when bounds are breached; silences PWM when within normal bounds.
+        4. Returns to blocked state.
+
+6. DisplayTask
+    - Purpose: Drives screen layout rendering on the SSD1306 OLED and manages screen sleep.
+    - Execution Pattern: Event-driven/Blocked state.
+    - Internal Logic:
+        1. Remains blocked until UI navigation updates or system state changes occur.
+        2. If system state is Inactive: Clears display buffer and powers down OLED screen controller via I2C.
+        3. If system state is Active: Powers on OLED screen and renders active UI layout matching the current menu view.
+        4. Returns to blocked state.
 
 ## Inter-Task Communication
 
