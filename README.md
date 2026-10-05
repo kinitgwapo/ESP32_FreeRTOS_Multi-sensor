@@ -187,11 +187,17 @@ If task priorities were improperly configured (for instance, if InputTask and Mo
 1. System State & Motion Signaling (systemEventGroup)
     - Mechanism: xEventGroupSetBits() / xEventGroupClearBits() / xEventGroupGetBits()
     - Interactions:
-      - Motion Tracking: When MotionTask detects physical movement via the PIR sensor, it sets the EVENT_MOTION bit.
-      - State Management: StateTask continuously monitors EVENT_MOTION. If motion is present, it resets its 15-second inactivity timer and ensures EVENT_ACTIVE is set. If the timer expires without motion, it clears the EVENT_ACTIVE bit.
+        1. Motion Tracking: When MotionTask detects physical movement via the PIR sensor, it sets the EVENT_MOTION bit.
+        2. State Management: StateTask continuously monitors EVENT_MOTION. If motion is present, it resets its 15-second inactivity timer and ensures EVENT_ACTIVE is set. If the timer expires without motion, it clears the EVENT_ACTIVE bit.
 
 2. Unified Display Handling (displayQueueSet)
-   
+    - Mechanism: FreeRTOS Queue Set (xQueueCreateSet)
+    - Behavior: To prevent DisplayTask from spinning or blocking on multiple individual queues, sensorQueue and inputQueue are combined into displayQueueSet.
+    - Interactions:
+        1. DisplayTask blocks xQueueSelectFromSet() until an event arrives from either user input or sensor telemetry.
+        2. It reads the active member, updates its local SensorData or currentMode index, checks the EVENT_ACTIVE state, and immediately updates the OLED.
+
+3. 
 
 ## State Machine
 
