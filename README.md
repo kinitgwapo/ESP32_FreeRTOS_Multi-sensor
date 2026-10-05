@@ -119,7 +119,8 @@ If task priorities were improperly configured (for instance, if InputTask and Mo
 
 ### Isolated Task Profiles
 
-1. InputTask
+#### 1. InputTask
+
     - Purpose: Detects user interactions via the KY-040 Rotary Encoder for screen navigation.
     - Execution Pattern: Continuous polling mode via vTaskDelayUntil() every 10ms.
     - Internal Logic:
@@ -128,7 +129,8 @@ If task priorities were improperly configured (for instance, if InputTask and Mo
         3. Decodes quadrature signals to detect clockwise or counter-clockwise rotation.
         4. Updates internal UI navigation index.
 
-2. MotionTask
+#### 2. MotionTask
+
     - Purpose: Performs low-level hardware sampling of the PIR motion sensor signal pin
     - Execution Pattern: Continuous polling mod every 100ms.
     - Internal Logic:
@@ -136,7 +138,8 @@ If task priorities were improperly configured (for instance, if InputTask and Mo
         2. Reads digital input state from the PIR sensor pin.
         3. Flags physical movement detection (HIGH state).
 
-3. StateTask
+#### 3. StateTask
+
     - Purpose: Serves as the central system state machine, tracking active usage and inactivity timeouts.
     - Execution Pattern: Periodic logic evaluation tick every 100ms.
     - Internal Logic:
@@ -145,7 +148,8 @@ If task priorities were improperly configured (for instance, if InputTask and Mo
         3. If motion is idle: Increments internal inactivity counter by 100ms.
         4. If inactivity counter reaches 15 seconds: Transitions system state to Inactive.
 
-4. SensorTask
+#### 4. SensorTask
+
     - Purpose: Handles environmental telemetry acquisition from physical sensors.
     - Execution Pattern: Periodic sampling every 2000ms (2s).
     - Internal Logic:
@@ -154,7 +158,8 @@ If task priorities were improperly configured (for instance, if InputTask and Mo
         3. Reads ADC analog voltage from LDR for light intensity (lux).
         4. Packs values into an internal telemetry memory struct.
 
-5. AlarmTask
+#### 5. AlarmTask
+
     - Purpose: Evaluates safety thresholds and operates the physical Piezo Buzzer hardware alert.
     - Execution Pattern: Event-driven/Blocked state.
     - Internal Logic:
@@ -163,7 +168,8 @@ If task priorities were improperly configured (for instance, if InputTask and Mo
         3. Drives PWM frequency to trigger Piezo buzzer when bounds are breached; silences PWM when within normal bounds.
         4. Returns to blocked state.
 
-6. DisplayTask
+#### 6. DisplayTask
+
     - Purpose: Drives screen layout rendering on the SSD1306 OLED and manages screen sleep.
     - Execution Pattern: Event-driven/Blocked state.
     - Internal Logic:
@@ -184,20 +190,39 @@ If task priorities were improperly configured (for instance, if InputTask and Mo
 
 ### Communication Channel Mechanics
 
-1. System State & Motion Signaling (systemEventGroup)
+#### 1. System State & Motion Signaling (systemEventGroup)
+
     - Mechanism: xEventGroupSetBits() / xEventGroupClearBits() / xEventGroupGetBits()
     - Interactions:
         1. Motion Tracking: When MotionTask detects physical movement via the PIR sensor, it sets the EVENT_MOTION bit.
         2. State Management: StateTask continuously monitors EVENT_MOTION. If motion is present, it resets its 15-second inactivity timer and ensures EVENT_ACTIVE is set. If the timer expires without motion, it clears the EVENT_ACTIVE bit.
 
-2. Unified Display Handling (displayQueueSet)
+#### 2. Unified Display Handling (displayQueueSet)
+
     - Mechanism: FreeRTOS Queue Set (xQueueCreateSet)
     - Behavior: To prevent DisplayTask from spinning or blocking on multiple individual queues, sensorQueue and inputQueue are combined into displayQueueSet.
     - Interactions:
         1. DisplayTask blocks xQueueSelectFromSet() until an event arrives from either user input or sensor telemetry.
         2. It reads the active member, updates its local SensorData or currentMode index, checks the EVENT_ACTIVE state, and immediately updates the OLED.
 
-3. 
+#### 3. Environmental Telemetry Dispatching (sensorQueue & alarmQueue)
+
+    - Mechanism: FreeRTOS Queues (xQueueSend / xQueueReceive)
+    - Behavior: Every 2 secondsm SensorTask reads the DHT22 and LDR. It packs this data—along with the live EVENT_MOTION status—into a SensorData struct.
+    - Interactions:
+        1. It calls rtos_send_sensor_data(), which dispatches the exact same payload to two separate queues: sensorQueue and alarmQueue.
+        2. AlarmTask unblocks on alarmQueue to evaluate temperature limits (<= 18°C or >= 30°C) and update the buzzer.
+
+#### 4. User Input Routing (inputQueue)
+
+    - Mechanism: FreeRTOS Queue (xQueueSend)
+    - Behavior: When the InputTask processes a rotary encoder state change, it sends the new UI view index (uint8_t currentEncodeMode) to inputQueue. This triggers the displayQueueSet to wake the DisplayTask for an instant screen redraw.
+
+#### 5. Thread-safe Serial Logging (serialMutex)
+
+    - Mechanism: FreeRTOS Mutex (xSemaphoreTake / xSemaphoreGive)
+    - Behavior: Because multiple tasks independently execute ESP_LOGI commands (eg., SensorTask, MotionTask, InputTask, StateTask), the project utilizes serialMutex.
+    - Rationale: Tasks must acquire the lock before printing to the UART monitor, preventing garbled terminal text caused by concurrent serial writes.
 
 ## State Machine
 
